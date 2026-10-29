@@ -42,16 +42,17 @@ export class CampusMapEngine {
     this.canvasWrapper = document.createElement("div");
     this.canvasWrapper.className = "map-canvas-wrapper";
 
-    // Campus Map Background (SVG or Image)
+    // Campus Map Background (Official PDEU College Map)
     const mapImg = document.createElement("img");
     mapImg.id = "campus-map-img";
     mapImg.className = "map-background-img";
-    mapImg.src = "assets/images/campus-map.svg";
+    mapImg.src = "assets/images/campus-map.jpg";
     mapImg.alt = "PDEU Campus Masterplan";
 
-    // Fallback error handler: if SVG or PNG fails, keep stylized grid
+    // Fallback error handler
     mapImg.onerror = () => {
       console.warn("Campus map image not found, using vector fallback background.");
+      mapImg.src = "assets/images/campus-map.svg";
     };
 
     // SVG Walking Path Overlay
@@ -78,6 +79,7 @@ export class CampusMapEngine {
     // Render Initial State
     this.renderPins();
     this.drawWalkingPath();
+    this.resetView();
   }
 
   renderControls() {
@@ -186,15 +188,29 @@ export class CampusMapEngine {
   }
 
   zoom(delta) {
-    const prev = this.scale;
-    this.scale = Math.min(this.maxScale, Math.max(this.minScale, this.scale + delta));
+    const prevScale = this.scale;
+    const newScale = Math.min(this.maxScale, Math.max(this.minScale, this.scale + delta));
+    if (newScale === prevScale) return;
+
+    const containerW = this.container.clientWidth || window.innerWidth;
+    const containerH = this.container.clientHeight || window.innerHeight;
+    const centerX = containerW / 2;
+    const centerY = containerH / 2;
+
+    this.panX = centerX - (centerX - this.panX) * (newScale / prevScale);
+    this.panY = centerY - (centerY - this.panY) * (newScale / prevScale);
+    this.scale = newScale;
     this.applyTransform();
   }
 
   resetView() {
-    this.scale = 1;
-    this.panX = 0;
-    this.panY = 0;
+    const containerW = this.container.clientWidth || window.innerWidth;
+    const containerH = this.container.clientHeight || (window.innerHeight - 90);
+    // Auto-fit 1024x707 image
+    const fitScale = Math.max(0.4, Math.min(containerW / 1024, containerH / 707));
+    this.scale = fitScale;
+    this.panX = (containerW - 1024 * this.scale) / 2;
+    this.panY = Math.max(10, (containerH - 707 * this.scale) / 2);
     this.applyTransform();
   }
 
