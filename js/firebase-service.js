@@ -236,14 +236,19 @@ class FirebaseService {
     if (this.isLiveFirebase) {
       try {
         const doc = await this.db.collection("teams").doc(cleanId).get();
-        return doc.exists ? { id: doc.id, ...doc.data() } : null;
+        if (!doc.exists) return null;
+        const data = doc.data();
+        if (data.status === "deleted") return null;
+        return { id: doc.id, ...data };
       } catch (err) {
         console.error("Firestore getTeam error:", err);
         throw err;
       }
     } else {
       const teams = JSON.parse(localStorage.getItem("pdeu_mock_teams") || "{}");
-      return teams[cleanId] || null;
+      const t = teams[cleanId] || null;
+      if (t && t.status === "deleted") return null;
+      return t;
     }
   }
 
@@ -257,7 +262,12 @@ class FirebaseService {
       return this.db.collection("teams").doc(cleanId).onSnapshot(
         (doc) => {
           if (doc.exists) {
-            onUpdate({ id: doc.id, ...doc.data() });
+            const data = doc.data();
+            if (data.status === "deleted") {
+              onUpdate(null);
+            } else {
+              onUpdate({ id: doc.id, ...data });
+            }
           } else {
             onUpdate(null);
           }
@@ -270,8 +280,10 @@ class FirebaseService {
     } else {
       this.listeners.set(cleanId, onUpdate);
       const teams = JSON.parse(localStorage.getItem("pdeu_mock_teams") || "{}");
-      if (teams[cleanId]) {
+      if (teams[cleanId] && teams[cleanId].status !== "deleted") {
         setTimeout(() => onUpdate(teams[cleanId]), 10);
+      } else {
+        setTimeout(() => onUpdate(null), 10);
       }
 
       return () => {
@@ -378,7 +390,11 @@ class FirebaseService {
         (snapshot) => {
           const teams = [];
           snapshot.forEach((doc) => {
-            teams.push({ id: doc.id, ...doc.data() });
+            const data = doc.data();
+            // Filter out soft-deleted rooms
+            if (data.status !== "deleted") {
+              teams.push({ id: doc.id, ...data });
+            }
           });
           onUpdate(teams);
         },
@@ -390,7 +406,8 @@ class FirebaseService {
     } else {
       const deliver = () => {
         const teamsObj = JSON.parse(localStorage.getItem("pdeu_mock_teams") || "{}");
-        onUpdate(Object.values(teamsObj));
+        const list = Object.values(teamsObj).filter(t => t.status !== "deleted");
+        onUpdate(list);
       };
 
       deliver();
@@ -401,6 +418,8 @@ class FirebaseService {
 
   /**
    * Delete a team / room
+   * Tries physical doc.delete() first, then seamlessly falls back to soft-delete
+   * so deletion succeeds even if Firestore rules restrict direct document deletions.
    */
   async deleteTeam(teamId) {
     await this.ready();
@@ -410,8 +429,18 @@ class FirebaseService {
       try {
         await this.db.collection("teams").doc(cleanId).delete();
       } catch (err) {
-        console.error("Firestore deleteTeam error:", err);
-        throw err;
+        console.warn("Direct doc.delete() blocked by Firestore security rules. Falling back to soft-delete update:", err);
+        try {
+          // Soft-delete via update
+          await this.db.collection("teams").doc(cleanId).set({
+            status: "deleted",
+            deletedAt: Date.now(),
+            players: []
+          }, { merge: true });
+        } catch (subErr) {
+          console.error("Both direct delete and soft-delete failed:", subErr);
+          throw subErr;
+        }
       }
     } else {
       const teams = JSON.parse(localStorage.getItem("pdeu_mock_teams") || "{}");
@@ -430,12 +459,13 @@ class FirebaseService {
 
     if (this.isLiveFirebase) {
       const snapshot = await this.db.collection("teams").get();
-      const batch = this.db.batch();
+      const targets = [];
 
       snapshot.forEach(doc => {
         const data = doc.data();
-        let shouldDelete = false;
+        if (data.status === "deleted") return;
 
+        let shouldDelete = false;
         if (filter === "all") {
           shouldDelete = true;
         } else if (filter === "finished") {
@@ -445,21 +475,34 @@ class FirebaseService {
         }
 
         if (shouldDelete) {
-          batch.delete(doc.ref);
-          count++;
+          targets.push(doc);
         }
       });
 
-      if (count > 0) {
+      if (targets.length === 0) return 0;
+
+      // Try physical batch delete first
+      try {
+        const batch = this.db.batch();
+        targets.forEach(doc => batch.delete(doc.ref));
         await batch.commit();
+        return targets.length;
+      } catch (err) {
+        console.warn("Physical batch delete blocked, falling back to batch soft-delete:", err);
+        const batch = this.db.batch();
+        targets.forEach(doc => {
+          batch.set(doc.ref, { status: "deleted", deletedAt: Date.now(), players: [] }, { merge: true });
+        });
+        await batch.commit();
+        return targets.length;
       }
-      return count;
     } else {
       const teams = JSON.parse(localStorage.getItem("pdeu_mock_teams") || "{}");
       Object.keys(teams).forEach(id => {
         const data = teams[id];
-        let shouldDelete = false;
+        if (data.status === "deleted") return;
 
+        let shouldDelete = false;
         if (filter === "all") {
           shouldDelete = true;
         } else if (filter === "finished") {

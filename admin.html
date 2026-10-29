@@ -26,7 +26,7 @@
       <form id="admin-login-form">
         <div class="form-group" style="text-align:left;">
           <label class="form-label">ADMIN ID</label>
-          <input type="text" id="admin-user-input" class="input mono" placeholder="admin" required autocomplete="username">
+          <input type="text" id="admin-user-input" class="input mono" placeholder="Organizer ID" required autocomplete="username">
         </div>
 
         <div class="form-group" style="text-align:left;">
@@ -38,9 +38,6 @@
           AUTHENTICATE →
         </button>
       </form>
-      <div style="margin-top:12px; font-size:11px; color:var(--dim);">
-        Default ID: <code>admin</code> • Password: <code>pdeu@amongus2026</code>
-      </div>
     </div>
   </div>
 
@@ -62,6 +59,7 @@
       <div class="header-right non-printable">
         <button id="btn-refresh-data" class="btn-icon" title="Refresh">🔄</button>
         <button id="btn-admin-daylight" class="btn-icon" title="Contrast">☀️</button>
+        <button id="btn-admin-logout" class="btn-secondary" style="font-size:12px; height:40px;" title="Log out">🔒 Exit</button>
         <a href="index.html" class="btn-secondary" style="font-size:12px; text-decoration:none; display:flex; align-items:center; gap:4px; height:40px;">
           📱 Player View
         </a>
@@ -170,6 +168,17 @@
     const userIn = document.getElementById("admin-user-input");
     const passIn = document.getElementById("admin-pass-input");
 
+    function unlockAdminView() {
+      loginModal.classList.add("hidden");
+      mainView.style.display = "block";
+      initDashboard();
+    }
+
+    // Auto-login if previously authenticated in this browser session
+    if (sessionStorage.getItem("pdeu_admin_authenticated") === "true") {
+      unlockAdminView();
+    }
+
     document.getElementById("admin-login-form").addEventListener("submit", (e) => {
       e.preventDefault();
       const u = userIn.value.trim();
@@ -181,14 +190,22 @@
       if (ok) {
         sound.success();
         vibrate([50, 30, 50]);
-        loginModal.classList.add("hidden");
-        mainView.style.display = "block";
-        initDashboard();
+        sessionStorage.setItem("pdeu_admin_authenticated", "true");
+        unlockAdminView();
       } else {
         sound.error();
         vibrate([100, 50, 100]);
         showToast("Invalid admin credentials", "error");
       }
+    });
+
+    document.getElementById("btn-admin-logout")?.addEventListener("click", () => {
+      sound.click();
+      sessionStorage.removeItem("pdeu_admin_authenticated");
+      mainView.style.display = "none";
+      loginModal.classList.remove("hidden");
+      userIn.value = "";
+      passIn.value = "";
     });
 
     // Tab buttons
