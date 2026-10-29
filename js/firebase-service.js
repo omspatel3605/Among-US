@@ -399,6 +399,86 @@ class FirebaseService {
     }
   }
 
+  /**
+   * Delete a team / room
+   */
+  async deleteTeam(teamId) {
+    await this.ready();
+    const cleanId = String(teamId).trim().toUpperCase();
+
+    if (this.isLiveFirebase) {
+      try {
+        await this.db.collection("teams").doc(cleanId).delete();
+      } catch (err) {
+        console.error("Firestore deleteTeam error:", err);
+        throw err;
+      }
+    } else {
+      const teams = JSON.parse(localStorage.getItem("pdeu_mock_teams") || "{}");
+      delete teams[cleanId];
+      localStorage.setItem("pdeu_mock_teams", JSON.stringify(teams));
+      this._notifyMockTeam(cleanId, null);
+    }
+  }
+
+  /**
+   * Bulk delete rooms by filter (e.g. 'all', 'finished', 'lobby')
+   */
+  async deleteTeamsByFilter(filter = "finished") {
+    await this.ready();
+    let count = 0;
+
+    if (this.isLiveFirebase) {
+      const snapshot = await this.db.collection("teams").get();
+      const batch = this.db.batch();
+
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        let shouldDelete = false;
+
+        if (filter === "all") {
+          shouldDelete = true;
+        } else if (filter === "finished") {
+          shouldDelete = !!data.finishTime || (data.currentLocationIndex || 1) > LOCATIONS.length;
+        } else if (filter === "lobby") {
+          shouldDelete = data.status === "lobby";
+        }
+
+        if (shouldDelete) {
+          batch.delete(doc.ref);
+          count++;
+        }
+      });
+
+      if (count > 0) {
+        await batch.commit();
+      }
+      return count;
+    } else {
+      const teams = JSON.parse(localStorage.getItem("pdeu_mock_teams") || "{}");
+      Object.keys(teams).forEach(id => {
+        const data = teams[id];
+        let shouldDelete = false;
+
+        if (filter === "all") {
+          shouldDelete = true;
+        } else if (filter === "finished") {
+          shouldDelete = !!data.finishTime || (data.currentLocationIndex || 1) > LOCATIONS.length;
+        } else if (filter === "lobby") {
+          shouldDelete = data.status === "lobby";
+        }
+
+        if (shouldDelete) {
+          delete teams[id];
+          count++;
+        }
+      });
+
+      localStorage.setItem("pdeu_mock_teams", JSON.stringify(teams));
+      return count;
+    }
+  }
+
   async batchCreateTeams(teamsList) {
     await this.ready();
     if (this.isLiveFirebase) {

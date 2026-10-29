@@ -53,7 +53,27 @@ export const AMONG_US_COLORS = [
   { id: 'lime', name: 'Lime', hex: '#50ef39', visor: '#ffffff' }
 ];
 
-// Approximate PDEU Campus GPS Bounding Box (for live real-time GPS map positioning)
+// Real PDEU Campus Ground-Truth GPS Calibration Reference Points:
+// 1. Center of Mess: 23.15704505788152, 72.66602395231996 -> { x: 50.54%, y: 21.85% }
+// 2. Center of Girls Hostel: 23.156768229375167, 72.66692721223068 -> { x: 66.50%, y: 18.50% }
+// 3. Center of E Block: 23.1555730266912, 72.66454480443679 -> { x: 39.50%, y: 72.20% }
+export const CAMPUS_GEO_CALIBRATION = {
+  landmarks: {
+    mess: { lat: 23.15704505788152, lng: 72.66602395231996, x: 50.54, y: 21.85 },
+    girlsHostel: { lat: 23.156768229375167, lng: 72.66692721223068, x: 66.50, y: 18.50 },
+    eBlock: { lat: 23.1555730266912, lng: 72.66454480443679, x: 39.50, y: 72.20 }
+  },
+  // Affine Transformation parameters (rotates -25.4° to align campus masterplan with real-world orientation):
+  affine: {
+    a: 15266.43055613,
+    b: -7840.39666869,
+    c: -927739.84952994,
+    d: -10850.23959197,
+    e: -23301.74204268,
+    f: 1328065.11048814
+  }
+};
+
 export const CAMPUS_GPS_BOUNDS = {
   north: 23.1585,
   south: 23.1520,
@@ -61,22 +81,23 @@ export const CAMPUS_GPS_BOUNDS = {
   east: 72.6720
 };
 
-// Convert device GPS (lat, lng) to percentage coords (x%, y%) on 1024x707 college map
+// Convert device GPS (lat, lng) to high-precision percentage coords (x%, y%) on 1024x707 college map
 export function gpsToCampusCoords(lat, lng) {
-  const { north, south, west, east } = CAMPUS_GPS_BOUNDS;
-  
-  // Clamp values inside bounds
-  const clampedLat = Math.max(south, Math.min(north, lat));
-  const clampedLng = Math.max(west, Math.min(east, lng));
+  if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) {
+    return { x: 50.0, y: 50.0 };
+  }
 
-  // Inverted Y (North is top = 0%, South is bottom = 100%)
-  const y = ((north - clampedLat) / (north - south)) * 100;
-  // X (West is left = 0%, East is right = 100%)
-  const x = ((clampedLng - west) / (east - west)) * 100;
+  const { a, b, c, d, e, f } = CAMPUS_GEO_CALIBRATION.affine;
+  const rawX = a * lng + b * lat + c;
+  const rawY = d * lng + e * lat + f;
+
+  // Clamp within visible map limits (3% to 97%)
+  const clampedX = Math.max(3, Math.min(97, rawX));
+  const clampedY = Math.max(3, Math.min(97, rawY));
 
   return {
-    x: Number(Math.max(4, Math.min(96, x)).toFixed(1)),
-    y: Number(Math.max(4, Math.min(96, y)).toFixed(1))
+    x: Number(clampedX.toFixed(1)),
+    y: Number(clampedY.toFixed(1))
   };
 }
 
@@ -119,6 +140,7 @@ export const LOCATIONS = [
     name: "OSAIL Gazebo",
     shortName: "OSAIL Gazebo",
     coords: { x: 46.5, y: 41.0 },
+    gps: { lat: 23.156481, lng: 72.665470 },
     token: "OG842X1",
     clue: "Start at Osail Gazebo pavilion beside the Cricket Ground.",
     puzzle: {
@@ -142,6 +164,7 @@ export const LOCATIONS = [
     name: "D Block Gazebo",
     shortName: "D Gazebo",
     coords: { x: 69.8, y: 60.5 },
+    gps: { lat: 23.155232, lng: 72.666355 },
     token: "DG519K2",
     clue: "Navigate east between D Block and C Block. Find D Gazebo.",
     puzzle: {
@@ -165,6 +188,7 @@ export const LOCATIONS = [
     name: "C Block Gazebo",
     shortName: "C Gazebo",
     coords: { x: 74.8, y: 63.8 },
+    gps: { lat: 23.154995, lng: 72.666600 },
     token: "CG773M3",
     clue: "Walk into the inner courtyard of C Block to find C Gazebo.",
     puzzle: {
@@ -188,6 +212,7 @@ export const LOCATIONS = [
     name: "A Block Seating",
     shortName: "A Seating",
     coords: { x: 84.5, y: 25.5 },
+    gps: { lat: 23.156083, lng: 72.667754 },
     token: "AS312P4",
     clue: "Proceed northeast towards the open curved amphitheater outside A Block.",
     puzzle: {
@@ -210,7 +235,8 @@ export const LOCATIONS = [
     order: 5,
     name: "Ness 1 Float (Mess)",
     shortName: "Mess / Ness 1",
-    coords: { x: 50.5, y: 21.5 },
+    coords: { x: 50.5, y: 21.8 },
+    gps: { lat: 23.15704505788152, lng: 72.66602395231996 },
     token: "NF904R5",
     clue: "Navigate to the northern quad near the dining hall. Spot the Mess / Ness 1 canopy structure.",
     puzzle: {
@@ -234,6 +260,7 @@ export const LOCATIONS = [
     name: "Gemini Stage (Germi)",
     shortName: "Gemini Stage",
     coords: { x: 57.0, y: 76.5 },
+    gps: { lat: 23.154993, lng: 72.665393 },
     token: "GS661Z6",
     clue: "Final Station! Reach the grand Gemini Stage / Germi complex directly south of D Block.",
     puzzle: {

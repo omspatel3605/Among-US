@@ -78,16 +78,22 @@
     <!-- TAB 1: LIVE MONITOR -->
     <section id="tab-live-table" class="tab-content active">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
-        <div style="font-size:13px; color:var(--muted);">
-          Active Crews: <strong id="count-total-teams" style="color:#fff;">0</strong>
+        <div style="font-size:13px; color:var(--muted); display:flex; align-items:center; gap:8px;">
+          <span>Active Crews: <strong id="count-total-teams" style="color:#fff;">0</strong></span>
         </div>
-        <div>
-          <select id="sort-select" class="input" style="height:38px; padding:0 10px; font-size:12px; width:auto;">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <select id="sort-select" class="input" style="height:36px; padding:0 8px; font-size:12px; width:auto;">
             <option value="score">Sort: Team Score</option>
             <option value="impostorScore">Sort: Impostor Score</option>
             <option value="location">Sort: Station Progress</option>
             <option value="id">Sort: Room Code</option>
           </select>
+          <button class="btn-sm" onclick="cleanFinishedRooms()" style="height:36px; padding:0 10px; font-size:12px; background:var(--bg-panel-light); border:1px solid var(--border);" title="Delete all rooms that have finished">
+            🧹 Clear Finished
+          </button>
+          <button class="btn-sm btn-sm-danger" onclick="cleanAllRooms()" style="height:36px; padding:0 10px; font-size:12px;" title="Reset / Delete all rooms">
+            🗑️ Delete All
+          </button>
         </div>
       </div>
 
@@ -284,6 +290,7 @@
             <div class="action-btn-group">
               <button class="btn-sm" onclick="forceUnlockLocation('${team.id}')" title="Unlock next station">🔓</button>
               <button class="btn-sm btn-sm-danger" onclick="forceTriggerSabotage('${team.id}')" title="Sabotage">⚡</button>
+              <button class="btn-sm btn-sm-danger" onclick="deleteTeamRoom('${team.id}')" title="Delete Room" style="background:#5a1515; border-color:var(--red);">🗑️</button>
             </div>
           </td>
         `;
@@ -333,6 +340,42 @@
           }
         });
         showToast(`Triggered Map Scramble on ${teamId}`, "info");
+      }
+    };
+
+    window.deleteTeamRoom = async (teamId) => {
+      if (!confirm(`Are you sure you want to permanently delete room "${teamId}"? This will remove all associated player records.`)) {
+        return;
+      }
+      sound.click();
+      try {
+        await firebaseService.deleteTeam(teamId);
+        showToast(`Room ${teamId} deleted`, "info");
+      } catch (err) {
+        showToast("Failed to delete room: " + err.message, "error");
+      }
+    };
+
+    window.cleanFinishedRooms = async () => {
+      if (!confirm("Delete all completed/finished rooms from the database?")) return;
+      sound.click();
+      try {
+        const count = await firebaseService.deleteTeamsByFilter("finished");
+        showToast(`Cleared ${count} finished room(s)`, "success");
+      } catch (err) {
+        showToast("Error clearing rooms: " + err.message, "error");
+      }
+    };
+
+    window.cleanAllRooms = async () => {
+      const code = prompt("⚠️ WARNING: This will permanently DELETE ALL ROOMS across the entire event!\nType DELETE to confirm:");
+      if (code !== "DELETE") return;
+      sound.error();
+      try {
+        const count = await firebaseService.deleteTeamsByFilter("all");
+        showToast(`Deleted ${count} room(s)`, "info");
+      } catch (err) {
+        showToast("Error deleting rooms: " + err.message, "error");
       }
     };
 
