@@ -2,12 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#121326">
   <title>Station Terminal — PDEU Among Us</title>
-  
   <link rel="stylesheet" href="css/style.css">
-  
-  <!-- Firebase Compat CDN -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
@@ -15,107 +13,103 @@
 
   <!-- App Header -->
   <header class="app-header">
-    <div class="header-brand">
-      <span class="brand-icon">⚡</span>
-      <h1 class="brand-title" id="terminal-header-title">STATION TERMINAL</h1>
+    <div class="header-left">
+      <button class="btn-back" onclick="window.location.href='map.html'">← Radar</button>
+      <h2 class="header-title">STATION TERMINAL</h2>
     </div>
-    <div class="header-actions">
-      <button id="btn-toggle-daylight" class="icon-btn" title="Toggle Outdoor Daylight Mode">☀️ Contrast</button>
-      <button id="btn-toggle-sound" class="icon-btn" title="Toggle Audio">🔊 Sound</button>
+    <div class="header-right">
+      <button id="btn-daylight" class="btn-icon" onclick="toggleDaylight()" title="Contrast">☀️</button>
+      <button id="btn-snd" class="btn-icon" onclick="toggleSnd()" title="Sound">🔊</button>
     </div>
   </header>
 
-  <main class="main-content">
+  <main class="screen-body">
 
-    <!-- Loading State Card -->
-    <div id="loading-card" class="cyber-card" style="text-align:center; padding: 40px 20px;">
-      <div style="font-size:44px; margin-bottom:12px; animation: pulse-danger 1.5s infinite;">📡</div>
-      <h2 style="font-size:20px; color:var(--amongus-blue);">VERIFYING QR SECURITY TOKEN...</h2>
-      <p style="color:var(--text-muted); font-size:14px; margin-top:8px;">Authenticating physical beacon handshake with PDEU satellite network.</p>
+    <!-- Loading State -->
+    <div id="loading-card" class="card text-center" style="padding:40px 16px;">
+      <div style="font-size:48px; margin-bottom:12px;">📡</div>
+      <h3 class="font-display" style="color:var(--cyan); font-size:18px;">VERIFYING BEACON...</h3>
+      <p style="color:var(--muted); font-size:13px; margin-top:6px;">Authenticating physical QR token with satellite network.</p>
     </div>
 
-    <!-- Error / Order Violation Card (Shown on skip / out-of-order attempts) -->
-    <div id="error-card" class="cyber-card cyber-card-danger" style="display:none; text-align:center;">
+    <!-- Error / Order Violation Card -->
+    <div id="error-card" class="card text-center hidden" style="border-color:var(--red);">
       <div style="font-size:52px; margin-bottom:12px;">⛔</div>
-      <h2 id="error-title" style="color:var(--amongus-red); font-size:22px;">ACCESS DENIED</h2>
-      <p id="error-desc" style="color:var(--text-main); font-size:15px; margin: 16px 0; line-height: 1.5;">
-        Station sequence mismatch.
-      </p>
-      <button id="btn-return-map" class="btn-primary" style="margin-top:10px;">
-        <span>RETURN TO CAMPUS RADAR</span>
+      <h2 id="error-title" class="font-display" style="color:var(--red); font-size:20px;">ACCESS DENIED</h2>
+      <p id="error-desc" style="font-size:14px; margin:14px 0; line-height:1.45;"></p>
+      <button class="btn-primary" onclick="window.location.href='map.html'">
+        RETURN TO RADAR
       </button>
     </div>
 
     <!-- Active Puzzle Interface Card -->
-    <div id="puzzle-card" class="cyber-card" style="display:none;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-        <span id="badge-station-number" class="mono" style="background:#1e293b; color:var(--amongus-blue); padding:4px 10px; border-radius:var(--radius-pill); font-size:12px; font-weight:700;">
-          STATION 1 / 6
+    <div id="puzzle-card" class="card hidden">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <span id="badge-station-num" class="mono" style="background:var(--bg-panel-light); color:var(--cyan); padding:3px 10px; border-radius:var(--radius-pill); font-size:11px; font-weight:700;">
+          STATION 1/6
         </span>
-        <span id="badge-wrong-count" class="mono" style="color:var(--amongus-red); font-size:12px; font-weight:700;">
-          Failed attempts: 0
+        <span id="badge-wrong-count" class="mono" style="color:var(--red); font-size:11px; font-weight:700;">
+          Errors: 0
         </span>
       </div>
 
-      <h2 id="puzzle-station-name" style="font-size:24px; color:#ffffff; margin-bottom:8px;">
+      <h2 id="puzzle-station-name" class="font-display" style="font-size:22px; margin-bottom:4px;">
         OSAIL Gazebo
       </h2>
-      <p id="puzzle-station-clue" style="color:var(--text-muted); font-size:13px; margin-bottom:18px;">
+      <p id="puzzle-station-clue" style="color:var(--muted); font-size:12px; margin-bottom:14px;">
         Student Activity Centre
       </p>
 
-      <!-- Decoy Sabotage Warning (Silently shows decoy question without explicit warning) -->
-      <div id="puzzle-box" style="background:var(--bg-surface-elevated); border:2px solid var(--border-subtle); border-radius:var(--radius-md); padding:18px; margin-bottom:20px;">
-        <div style="font-size:11px; font-family:var(--font-mono); color:var(--amongus-yellow); margin-bottom:6px; letter-spacing:1px;">
-          CRYPTOGRAPHIC CHALLENGE:
+      <!-- Question Box -->
+      <div style="background:var(--bg-panel-light); border:2px solid var(--border); border-radius:var(--radius-md); padding:14px; margin-bottom:16px;">
+        <div style="font-family:var(--font-mono); font-size:10px; color:var(--yellow); margin-bottom:6px; letter-spacing:1px;">
+          CRYPTOGRAPHIC TASK:
         </div>
-        <p id="puzzle-question-text" style="font-size:16px; line-height:1.5; font-weight:600; color:#f8fafc;">
-          Loading puzzle...
+        <p id="puzzle-question" style="font-size:15px; font-weight:600; line-height:1.45;">
+          Loading question...
         </p>
       </div>
 
       <!-- Answer Input Form -->
       <form id="puzzle-form">
         <div class="form-group">
-          <label class="form-label" for="puzzle-answer-input">Enter Solution</label>
+          <label class="form-label" for="puzzle-input">ENTER CODE / ANSWER</label>
           <input 
             type="text" 
-            id="puzzle-answer-input" 
-            class="cyber-input" 
-            placeholder="Type your answer here..." 
+            id="puzzle-input" 
+            class="input" 
+            placeholder="Type solution here..." 
             required 
             autocomplete="off"
             autocapitalize="characters"
           >
         </div>
 
-        <button type="submit" id="btn-submit-answer" class="btn-primary">
-          <span>TRANSMIT OVERRIDE CODE</span>
-          <span>➔</span>
+        <button type="submit" id="btn-submit" class="btn-primary">
+          SUBMIT ANSWER →
         </button>
       </form>
 
       <!-- Hint Accordion -->
-      <div style="margin-top:16px; text-align:center;">
-        <button id="btn-toggle-hint" class="btn-secondary" style="font-size:13px; padding:6px 14px;">
+      <div style="margin-top:14px; text-align:center;">
+        <button id="btn-toggle-hint" class="btn-ghost" style="font-size:12px; padding:6px 14px;" onclick="toggleHint()">
           💡 Need a Clue?
         </button>
-        <div id="hint-text" style="display:none; margin-top:10px; font-size:13px; color:var(--text-muted); background:#141b2d; padding:10px 14px; border-radius:var(--radius-sm); border:1px solid #334155;">
-          Hint goes here.
+        <div id="hint-box" class="hidden" style="margin-top:8px; font-size:12px; color:var(--muted); background:var(--bg-panel-light); padding:10px; border-radius:var(--radius-sm); border:1px solid var(--border);">
+          Hint text
         </div>
       </div>
     </div>
 
-    <!-- Success Resolution Overlay -->
-    <div id="success-overlay" class="cyber-card" style="display:none; text-align:center; padding:36px 20px; border-color:var(--amongus-green); box-shadow:0 0 30px rgba(34,197,94,0.4);">
-      <div style="font-size:60px; margin-bottom:12px;">✅</div>
-      <h2 style="color:var(--amongus-green); font-size:26px; margin-bottom:8px;">STATION CLEARED!</h2>
-      <p id="success-message" style="color:var(--text-main); font-size:15px; margin-bottom:20px;">
-        Beacon unlocked. Radar updated with next station coordinates.
+    <!-- Success Resolution Card -->
+    <div id="success-card" class="card text-center hidden" style="border-color:var(--green-light); padding:32px 16px;">
+      <div style="font-size:56px; margin-bottom:8px;">✅</div>
+      <h2 class="font-display" style="color:var(--green-light); font-size:24px; margin-bottom:6px;">STATION CLEARED!</h2>
+      <p id="success-desc" style="font-size:14px; color:var(--white); margin-bottom:20px;">
+        Next objective unlocked on campus radar.
       </p>
-      <button id="btn-next-step" class="btn-primary" style="background:linear-gradient(135deg, #15803d, #22c55e); box-shadow:0 6px 20px rgba(34,197,94,0.4);">
-        <span>CONTINUE TO MAP</span>
-        <span>➔</span>
+      <button id="btn-next" class="btn-primary" style="background:var(--green-light); color:#000;">
+        CONTINUE TO MAP →
       </button>
     </div>
 
@@ -123,31 +117,17 @@
 
   <script type="module">
     import { firebaseService } from './js/firebase-service.js';
-    import { session, displayMode, showToast, showAlarmBanner } from './js/app.js';
+    import { session, displayMode, showToast, vibrate } from './js/app.js';
     import { sound } from './js/sound.js';
     import { LOCATIONS, isAnswerCorrect } from './js/config.js';
     import { sabotageEngine } from './js/sabotage-engine.js';
     import { rogueAIEngine } from './js/rogue-ai-engine.js';
 
-    // Verify Session
+    displayMode.apply();
+
     const user = session.requireAuth();
-    if (!user) {
-      window.location.href = "index.html";
-    }
+    if (!user) { window.location.href = "index.html"; }
 
-    // UI Buttons
-    document.getElementById("btn-toggle-daylight").addEventListener("click", () => {
-      displayMode.toggle();
-    });
-
-    const soundBtn = document.getElementById("btn-toggle-sound");
-    soundBtn.addEventListener("click", () => {
-      const isMuted = sound.toggleMute();
-      soundBtn.textContent = isMuted ? "🔇 Muted" : "🔊 Sound";
-    });
-    if (sound.getMuted()) soundBtn.textContent = "🔇 Muted";
-
-    // Parse URL parameters: ?loc=dblock-gazebo&token=DG519K2
     const urlParams = new URLSearchParams(window.location.search);
     const locId = urlParams.get("loc");
     const token = urlParams.get("token");
@@ -155,11 +135,7 @@
     const loadingCard = document.getElementById("loading-card");
     const errorCard = document.getElementById("error-card");
     const puzzleCard = document.getElementById("puzzle-card");
-    const successOverlay = document.getElementById("success-overlay");
-
-    document.getElementById("btn-return-map").addEventListener("click", () => {
-      window.location.href = "map.html";
-    });
+    const successCard = document.getElementById("success-card");
 
     let currentTeam = null;
     let targetLocation = null;
@@ -168,205 +144,190 @@
 
     async function initScan() {
       if (!locId || !token) {
-        showError("Invalid QR Beacon", "No station or verification token found in QR code. Please scan the official station code.");
+        showError("Invalid QR Beacon", "No station or token found in QR code. Scan the official station QR.");
         return;
       }
 
-      // Fetch dynamic locations from Firestore (or config fallback)
-      const allLocations = await firebaseService.getLocations();
-      targetLocation = allLocations.find(l => l.id === locId);
+      const allLocs = await firebaseService.getLocations();
+      targetLocation = allLocs.find(l => l.id === locId);
 
       if (!targetLocation) {
-        showError("Unknown Station", `The scanned station identifier '${locId}' is not registered on this campus.`);
+        showError("Unknown Station", `Station '${locId}' is not registered on this campus.`);
         return;
       }
 
-      // Fetch latest team document
       currentTeam = await firebaseService.getTeam(user.teamId);
       if (!currentTeam) {
-        showError("Team Not Found", "Could not locate your team registration record. Re-login from the home screen.");
+        showError("Crew Not Found", "Could not locate your crew record. Please re-enter room code.");
         return;
       }
 
-      // 1. Token Verification
+      // Token check
       if (String(targetLocation.token).trim().toUpperCase() !== String(token).trim().toUpperCase()) {
-        showError("Security Verification Failed", "Invalid cryptographic token for this location. Ensure you are scanning the authentic QR code.");
+        showError("Invalid Token", "Security verification failed for this station. Ensure you scan the authentic QR.");
         return;
       }
 
-      // 2. Sequential Order Verification
-      const teamCurrentIndex = currentTeam.currentLocationIndex || 1;
+      // Sequence check
+      const currentIdx = currentTeam.currentLocationIndex || 1;
 
-      if (targetLocation.order < teamCurrentIndex) {
-        showError("Station Already Cleared", `Your team has already solved '${targetLocation.name}'. Please proceed to your next active objective on the radar.`);
+      if (targetLocation.order < currentIdx) {
+        showError("Already Cleared", `Your crew has already completed '${targetLocation.name}'. Head to your next objective on the radar.`);
         return;
       }
 
-      if (targetLocation.order > teamCurrentIndex) {
-        const requiredLoc = allLocations.find(l => l.order === teamCurrentIndex);
+      if (targetLocation.order > currentIdx) {
+        const req = allLocs.find(l => l.order === currentIdx);
         showError(
-          "Sequence Violation: Out of Order",
-          `Access Denied! You are attempting to skip ahead to '${targetLocation.name}'. Your team must first physically visit and solve: <strong>${requiredLoc ? requiredLoc.name : 'Station ' + teamCurrentIndex}</strong>.`
+          "Sequence Violation",
+          `Access Denied! You are skipping ahead. Your crew must first visit: <strong>${req ? req.name : 'Station ' + currentIdx}</strong>.`
         );
         return;
       }
 
-      // Initialize Sabotage & Rogue AI Engines
+      // Initialize engines
       sabotageEngine.init(currentTeam, user);
       rogueAIEngine.init(currentTeam, user);
 
-      // Subscribe to real-time team updates while on puzzle screen (for instant Puzzle Swap or Rogue AI glitches)
-      firebaseService.subscribeTeam(user.teamId, (updatedTeam) => {
-        if (!updatedTeam) return;
-        currentTeam = updatedTeam;
-        sabotageEngine.handleTeamUpdate(updatedTeam);
-        rogueAIEngine.handleTeamUpdate(updatedTeam);
+      // Subscribe for live puzzle swap / glitch
+      firebaseService.subscribeTeam(user.teamId, (updated) => {
+        if (!updated) return;
+        currentTeam = updated;
+        sabotageEngine.handleTeamUpdate(updated);
+        rogueAIEngine.handleTeamUpdate(updated);
         renderPuzzleState();
       });
 
       renderPuzzleState();
     }
 
-    function showError(title, message) {
-      loadingCard.style.display = "none";
-      puzzleCard.style.display = "none";
-      errorCard.style.display = "block";
+    function showError(title, msg) {
+      loadingCard.classList.add("hidden");
+      puzzleCard.classList.add("hidden");
+      errorCard.classList.remove("hidden");
       document.getElementById("error-title").textContent = title;
-      document.getElementById("error-desc").innerHTML = message;
+      document.getElementById("error-desc").innerHTML = msg;
       sound.error();
+      vibrate([150, 50, 150]);
     }
 
     function renderPuzzleState() {
-      loadingCard.style.display = "none";
-      errorCard.style.display = "none";
-      puzzleCard.style.display = "block";
+      loadingCard.classList.add("hidden");
+      errorCard.classList.add("hidden");
+      puzzleCard.classList.remove("hidden");
 
-      const stationNum = document.getElementById("badge-station-number");
-      const wrongCountBadge = document.getElementById("badge-wrong-count");
-      const stationName = document.getElementById("puzzle-station-name");
-      const stationClue = document.getElementById("puzzle-station-clue");
-      const questionText = document.getElementById("puzzle-question-text");
-      const hintText = document.getElementById("hint-text");
+      document.getElementById("badge-station-num").textContent = `STATION ${targetLocation.order}/${LOCATIONS.length}`;
+      document.getElementById("puzzle-station-name").textContent = targetLocation.name;
+      document.getElementById("puzzle-station-clue").textContent = targetLocation.clue || "";
 
-      stationNum.textContent = `STATION ${targetLocation.order} / ${LOCATIONS.length}`;
-      stationName.textContent = targetLocation.name;
-      stationClue.textContent = targetLocation.clue || "";
-
-      // Load wrong attempts count from progress
       const locProgress = currentTeam.progress?.[targetLocation.id] || {};
       wrongAttemptsCount = locProgress.wrongAttempts || 0;
-      wrongCountBadge.textContent = `Failed attempts: ${wrongAttemptsCount}`;
+      document.getElementById("badge-wrong-count").textContent = `Errors: ${wrongAttemptsCount}`;
 
-      // Check if "Puzzle Swap" sabotage is currently active
+      // Check Puzzle Swap sabotage
       const now = Date.now();
-      const puzzleSwap = currentTeam.sabotageState?.puzzleSwap;
-      isDecoyActive = puzzleSwap?.active && puzzleSwap.expiresAt > now;
+      const pSwap = currentTeam.sabotageState?.puzzleSwap;
+      isDecoyActive = pSwap?.active && pSwap.expiresAt > now;
+
+      const qText = document.getElementById("puzzle-question");
+      const hText = document.getElementById("hint-box");
 
       if (isDecoyActive) {
-        // Silently show Decoy Puzzle!
-        questionText.textContent = targetLocation.decoyPuzzle?.question || "Enter master hex clearance override code from foundation stone:";
-        hintText.textContent = targetLocation.decoyPuzzle?.hint || "Inspect surrounding physical structures carefully.";
+        qText.textContent = targetLocation.decoyPuzzle?.question || "Enter master hex clearance code:";
+        hText.textContent = targetLocation.decoyPuzzle?.hint || "Inspect surrounding physical structures.";
       } else {
-        // Show Real Puzzle
-        questionText.textContent = targetLocation.puzzle?.question || "Solve the station riddle.";
-        hintText.textContent = targetLocation.puzzle?.hint || "Look closely at the surrounding area.";
+        qText.textContent = targetLocation.puzzle?.question || "Solve station riddle.";
+        hText.textContent = targetLocation.puzzle?.hint || "Look closely at the surrounding area.";
       }
     }
 
-    // Toggle Hint Accordion
-    document.getElementById("btn-toggle-hint").addEventListener("click", () => {
-      const hint = document.getElementById("hint-text");
-      hint.style.display = hint.style.display === "none" ? "block" : "none";
+    window.toggleHint = () => {
       sound.click();
-    });
+      const hb = document.getElementById("hint-box");
+      hb.classList.toggle("hidden");
+    };
 
-    // Handle Puzzle Submission
-    const form = document.getElementById("puzzle-form");
-    form.addEventListener("submit", async (e) => {
+    window.toggleDaylight = () => { displayMode.toggle(); };
+    window.toggleSnd = () => {
+      const m = sound.toggleMute();
+      document.getElementById("btn-snd").textContent = m ? "🔇" : "🔊";
+    };
+    if (sound.getMuted()) document.getElementById("btn-snd").textContent = "🔇";
+
+    // Answer submit
+    document.getElementById("puzzle-form").addEventListener("submit", async (e) => {
       e.preventDefault();
       sound.click();
 
-      const input = document.getElementById("puzzle-answer-input");
-      const submitBtn = document.getElementById("btn-submit-answer");
-      const userAnswer = input.value.trim();
-
-      if (!userAnswer) return;
+      const input = document.getElementById("puzzle-input");
+      const submitBtn = document.getElementById("btn-submit");
+      const answer = input.value.trim();
+      if (!answer) return;
 
       submitBtn.disabled = true;
-      submitBtn.innerHTML = "<span>VERIFYING OVERRIDE...</span>";
+      submitBtn.textContent = "VERIFYING...";
 
-      // 1. IF PUZZLE SWAP DECOY WAS SHOWN: Auto-reject any answer
+      // 1. Decoy rejection
       if (isDecoyActive) {
-        await handleWrongAnswer("INCORRECT SOLUTION: Verification checksum rejected by station terminal.");
+        await handleWrong("INCORRECT SOLUTION: Verification checksum failed.");
         submitBtn.disabled = false;
-        submitBtn.innerHTML = "<span>TRANSMIT OVERRIDE CODE</span><span>➔</span>";
+        submitBtn.textContent = "SUBMIT ANSWER →";
         return;
       }
 
-      // Check correctness against Real Puzzle
-      const isCorrect = isAnswerCorrect(userAnswer, targetLocation.puzzle?.answer);
+      // 2. Check correctness
+      const isCorrect = isAnswerCorrect(answer, targetLocation.puzzle?.answer);
 
-      // 2. CHECK "FAKE REJECT" SABOTAGE
-      // If answer is actually CORRECT, but Fake Reject trap is currently armed:
+      // 3. Fake Reject trap
       const fakeReject = currentTeam.sabotageState?.fakeReject;
       if (isCorrect && fakeReject?.active) {
-        // Consume the Fake Reject silently
-        await firebaseService.updateTeam(user.teamId, {
-          "sabotageState.fakeReject.active": false
-        });
+        await firebaseService.updateTeam(user.teamId, { "sabotageState.fakeReject.active": false });
         await firebaseService.logSabotage(user.teamId, {
           type: "fakeReject_consumed",
-          triggeredBy: "trap_sprung",
           playerId: user.playerId,
           locationId: targetLocation.id
         });
-
-        // Show fake failure
-        await handleWrongAnswer("ACCESS DENIED: Signal packet lost. Verification rejected.");
+        await handleWrong("ACCESS DENIED: Signal packet corrupted. Verification rejected.");
         submitBtn.disabled = false;
-        submitBtn.innerHTML = "<span>TRANSMIT OVERRIDE CODE</span><span>➔</span>";
+        submitBtn.textContent = "SUBMIT ANSWER →";
         return;
       }
 
-      // 3. ACTUAL VERIFICATION
       if (isCorrect) {
-        await handleCorrectAnswer();
+        await handleSuccess();
       } else {
-        await handleWrongAnswer("INCORRECT: Double-check your clues and try again!");
+        await handleWrong("INCORRECT: Double-check your clues and try again!");
         submitBtn.disabled = false;
-        submitBtn.innerHTML = "<span>TRANSMIT OVERRIDE CODE</span><span>➔</span>";
+        submitBtn.textContent = "SUBMIT ANSWER →";
       }
     });
 
-    async function handleWrongAnswer(message) {
+    async function handleWrong(msg) {
       wrongAttemptsCount++;
       sound.error();
+      vibrate([100, 50, 100]);
 
-      const input = document.getElementById("puzzle-answer-input");
-      input.classList.add("input-shake");
-      setTimeout(() => input.classList.remove("input-shake"), 400);
+      const input = document.getElementById("puzzle-input");
+      input.style.borderColor = "var(--red)";
+      setTimeout(() => input.style.borderColor = "", 500);
 
-      showToast(message, "error");
+      showToast(msg, "error");
 
-      // Update wrong attempts count in Firestore
       const updateKey = `progress.${targetLocation.id}.wrongAttempts`;
       try {
-        await firebaseService.updateTeam(user.teamId, {
-          [updateKey]: wrongAttemptsCount
-        });
-      } catch (err) {
-        console.warn("Could not sync wrong attempt:", err);
-      }
+        await firebaseService.updateTeam(user.teamId, { [updateKey]: wrongAttemptsCount });
+      } catch (e) {}
     }
 
-    async function handleCorrectAnswer() {
+    async function handleSuccess() {
       sound.success();
+      vibrate([50, 30, 80, 40, 120]);
 
-      const nextIndex = targetLocation.order + 1;
+      const nextIdx = targetLocation.order + 1;
       const isFinal = targetLocation.order >= LOCATIONS.length;
 
       const updates = {
-        currentLocationIndex: nextIndex,
+        currentLocationIndex: nextIdx,
         [`progress.${targetLocation.id}`]: {
           status: "completed",
           timestamp: Date.now(),
@@ -374,30 +335,26 @@
         }
       };
 
-      if (isFinal) {
-        updates.finishTime = Date.now();
-      }
+      if (isFinal) updates.finishTime = Date.now();
 
       try {
         await firebaseService.updateTeam(user.teamId, updates);
-      } catch (err) {
-        console.error("Failed to mark location completed:", err);
-      }
+      } catch (e) {}
 
-      puzzleCard.style.display = "none";
-      successOverlay.style.display = "block";
+      puzzleCard.classList.add("hidden");
+      successCard.classList.remove("hidden");
 
-      const successMsg = document.getElementById("success-message");
-      const nextBtn = document.getElementById("btn-next-step");
+      const desc = document.getElementById("success-desc");
+      const nextBtn = document.getElementById("btn-next");
 
       if (isFinal) {
-        successMsg.innerHTML = "🎉 All 6 PDEU Campus Stations Cleared!<br>Emergency communication channel open. Proceeding to Mission Debrief & Voting.";
-        nextBtn.innerHTML = "<span>PROCEED TO FINAL DEBRIEF</span><span>➔</span>";
+        desc.innerHTML = "🎉 All 6 PDEU Campus Stations Cleared!<br>Proceeding to Mission Debrief & Voting.";
+        nextBtn.textContent = "FINAL DEBRIEF →";
         nextBtn.onclick = () => window.location.href = "finish.html";
       } else {
-        const nextLoc = LOCATIONS.find(l => l.order === nextIndex);
-        successMsg.innerHTML = `Beacon decoded!<br>Radar unlocked for next objective: <strong>${nextLoc ? nextLoc.name : 'Station ' + nextIndex}</strong>.`;
-        nextBtn.innerHTML = "<span>RETURN TO CAMPUS RADAR</span><span>➔</span>";
+        const nextLoc = LOCATIONS.find(l => l.order === nextIdx);
+        desc.innerHTML = `Beacon decoded! Radar pointing to: <strong>${nextLoc ? nextLoc.name : 'Station ' + nextIdx}</strong>.`;
+        nextBtn.textContent = "CONTINUE TO MAP →";
         nextBtn.onclick = () => window.location.href = "map.html";
       }
     }

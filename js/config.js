@@ -1,6 +1,6 @@
 /**
  * AMONG US: PDEU CAMPUS TREASURE HUNT
- * Central Game Configuration & Locations
+ * Central Game Configuration, Locations, Scoring & Admin Credentials
  */
 
 // Firebase Configuration
@@ -19,7 +19,13 @@ export const isDemoConfig = () => {
   return !FIREBASE_CONFIG.apiKey || FIREBASE_CONFIG.apiKey.includes("DEMO_REPLACE");
 };
 
-// Admin Dashboard Passcode
+// Organizer / Admin Login Credentials (for walk-up event management)
+export const ADMIN_CREDENTIALS = {
+  username: "admin",
+  password: "pdeu@amongus2026"
+};
+
+// Legacy passcode fallback for quick unlock
 export const ADMIN_PASSCODE = "pdeu2026";
 
 // Scoring Parameters
@@ -188,6 +194,16 @@ export const LOCATIONS = [
     }
   }
 ];
+
+// Generate 6-letter Among Us style room code (e.g. "SKELDX")
+export function generateRoomCode() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ"; // No I, O to prevent confusion
+  let code = "";
+  for (let i = 0; i < 6; i++) {
+    code += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return code;
+}
 
 // Helper: Get Location by ID
 export function getLocationById(locId) {

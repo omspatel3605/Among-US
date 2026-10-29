@@ -1,5 +1,5 @@
 /**
- * Shared Application Utilities & Session Management
+ * Shared Application Utilities, Session Management & Mobile Haptics
  */
 
 import { sound } from './sound.js';
@@ -37,6 +37,15 @@ export const session = {
   }
 };
 
+// Mobile Haptics (Vibration API)
+export function vibrate(pattern = [50]) {
+  try {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(pattern);
+    }
+  } catch (e) {}
+}
+
 // Format milliseconds or seconds to mm:ss or hh:mm:ss
 export function formatDuration(ms) {
   if (isNaN(ms) || ms <= 0) return "00:00";
@@ -57,7 +66,7 @@ export function generatePlayerId(teamId) {
   return `P-${teamId}-${rand}`;
 }
 
-// Daylight / High Contrast Outdoor Mode
+// Daylight / High Contrast Outdoor Mode (Essential for bright midday sun on campus)
 export const displayMode = {
   isDaylight() {
     return localStorage.getItem(DAYLIGHT_KEY) === "true";
@@ -69,6 +78,7 @@ export const displayMode = {
     return isDay;
   },
   apply() {
+    if (typeof document === 'undefined') return;
     if (this.isDaylight()) {
       document.documentElement.classList.add("daylight-mode");
     } else {
@@ -77,8 +87,10 @@ export const displayMode = {
   }
 };
 
-// UI Notification Toast
-export function showToast(message, type = "info", duration = 3500) {
+// UI Notification Toast (Mobile Thumb-friendly, Bottom-Centered)
+export function showToast(message, type = "info", duration = 3200) {
+  if (typeof document === 'undefined') return;
+
   let toastEl = document.getElementById("pdeu-toast");
   if (!toastEl) {
     toastEl = document.createElement("div");
@@ -96,18 +108,27 @@ export function showToast(message, type = "info", duration = 3500) {
 
   toastEl.appendChild(toast);
 
-  if (type === "error") sound.error();
-  else if (type === "success") sound.success();
-  else sound.click();
+  if (type === "error") {
+    sound.error();
+    vibrate([100, 50, 100]);
+  } else if (type === "success") {
+    sound.success();
+    vibrate([40, 20, 60]);
+  } else {
+    sound.click();
+    vibrate([30]);
+  }
 
   setTimeout(() => {
     toast.classList.add("toast-fadeout");
-    setTimeout(() => toast.remove(), 400);
+    setTimeout(() => toast.remove(), 350);
   }, duration);
 }
 
 // Among Us Emergency / Sabotage Alarm Banner Modal
 export function showAlarmBanner(title, message, isSabotage = true) {
+  if (typeof document === 'undefined') return;
+
   const existing = document.getElementById("pdeu-alarm-banner");
   if (existing) existing.remove();
 
@@ -127,11 +148,12 @@ export function showAlarmBanner(title, message, isSabotage = true) {
 
   document.body.appendChild(banner);
   sound.sabotageAlarm();
+  vibrate([150, 75, 150, 75, 300]);
 
   setTimeout(() => {
     banner.classList.add("alarm-dismiss");
-    setTimeout(() => banner.remove(), 500);
-  }, 4500);
+    setTimeout(() => banner.remove(), 450);
+  }, 4200);
 }
 
 // Initial script execution

@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#121326">
   <title>Organizer Command Center — PDEU Among Us</title>
   
   <link rel="stylesheet" href="css/style.css">
@@ -11,28 +12,39 @@
   <!-- Firebase Compat CDN -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-  
-  <!-- Local & CDN QR Code Generator -->
   <script src="js/vendor/qrcode.min.js"></script>
 </head>
 <body class="admin-body">
 
-  <!-- Passcode Modal Gate -->
-  <div id="passcode-modal" style="position:fixed; inset:0; background:rgba(9,13,22,0.96); z-index:9999; display:flex; align-items:center; justify-content:center; padding:20px;">
-    <div class="cyber-card" style="width:100%; max-width:380px; text-align:center;">
-      <div style="font-size:42px; margin-bottom:8px;">🔐</div>
-      <h2 style="font-size:22px; color:var(--amongus-blue); margin-bottom:6px;">ORGANIZER ACCESS</h2>
-      <p style="color:var(--text-muted); font-size:13px; margin-bottom:18px;">Enter administrator passcode to access event monitoring controls.</p>
+  <!-- Organizer Login Gate Modal (Username & Password) -->
+  <div id="login-modal" class="modal-overlay">
+    <div class="card" style="width:100%; max-width:380px; text-align:center;">
+      <div style="font-size:42px; margin-bottom:6px;">🔐</div>
+      <h2 class="font-display" style="font-size:20px; color:var(--cyan); margin-bottom:4px;">ORGANIZER LOGIN</h2>
+      <p style="color:var(--muted); font-size:12px; margin-bottom:18px;">PDEU Campus Event Administration</p>
       
-      <form id="passcode-form">
-        <input type="password" id="admin-passcode-input" class="cyber-input mono" placeholder="Enter passcode..." autofocus required style="margin-bottom:14px; text-align:center; font-size:18px;">
-        <button type="submit" class="btn-primary">AUTHENTICATE</button>
+      <form id="admin-login-form">
+        <div class="form-group" style="text-align:left;">
+          <label class="form-label">ADMIN ID</label>
+          <input type="text" id="admin-user-input" class="input mono" placeholder="admin" required autocomplete="username">
+        </div>
+
+        <div class="form-group" style="text-align:left;">
+          <label class="form-label">PASSWORD</label>
+          <input type="password" id="admin-pass-input" class="input mono" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+
+        <button type="submit" class="btn-primary">
+          AUTHENTICATE →
+        </button>
       </form>
-      <div style="margin-top:12px; font-size:11px; color:var(--text-dim);">Default passcode: pdeu2026</div>
+      <div style="margin-top:12px; font-size:11px; color:var(--dim);">
+        Default ID: <code>admin</code> • Password: <code>pdeu@amongus2026</code>
+      </div>
     </div>
   </div>
 
-  <!-- Main Dashboard Container (Visible after authentication) -->
+  <!-- Main Organizer View (Unlocked) -->
   <div id="admin-main-view" class="admin-container" style="display:none;">
 
     <!-- Admin Header -->
@@ -40,40 +52,41 @@
       <div class="admin-title-area">
         <h1>
           <span>🛸</span>
-          <span>PDEU TREASURE HUNT DASHBOARD</span>
-          <span class="admin-badge">LIVE MONITOR</span>
+          <span>PDEU TREASURE HUNT</span>
+          <span class="admin-badge">ORGANIZER HUD</span>
         </h1>
-        <div style="color:var(--text-muted); font-size:13px; margin-top:4px;">
-          Pandit Deendayal Energy University • Real-Time Firestore Sync
+        <div style="color:var(--muted); font-size:12px; margin-top:2px;">
+          Walk-up Event Real-Time Monitor
         </div>
       </div>
-      <div class="header-actions non-printable">
-        <button id="btn-refresh-data" class="icon-btn">🔄 Refresh</button>
-        <button id="btn-toggle-daylight" class="icon-btn">☀️ Contrast</button>
-        <a href="index.html" class="icon-btn" style="text-decoration:none;">📱 Player View</a>
+      <div class="header-right non-printable">
+        <button id="btn-refresh-data" class="btn-icon" title="Refresh">🔄</button>
+        <button id="btn-admin-daylight" class="btn-icon" title="Contrast">☀️</button>
+        <a href="index.html" class="btn-secondary" style="font-size:12px; text-decoration:none; display:flex; align-items:center; gap:4px; height:40px;">
+          📱 Player View
+        </a>
       </div>
     </header>
 
     <!-- Navigation Tabs -->
     <nav class="admin-tabs non-printable">
-      <button class="tab-btn active" data-tab="tab-live-table">📊 Live Monitor &amp; Leaderboard</button>
-      <button class="tab-btn" data-tab="tab-pregen">🎟️ Team ID Pre-Generator</button>
-      <button class="tab-btn" data-tab="tab-qr-codes">📷 QR Codes Generator</button>
-      <button class="tab-btn" data-tab="tab-puzzle-editor">✏️ Station Puzzles Editor</button>
+      <button class="tab-btn active" data-tab="tab-live-table">📊 Live Crews &amp; Leaderboard</button>
+      <button class="tab-btn" data-tab="tab-qr-codes">📷 QR Generator</button>
+      <button class="tab-btn" data-tab="tab-puzzle-editor">✏️ Station Puzzles</button>
     </nav>
 
-    <!-- TAB 1: LIVE MONITOR & LEADERBOARD -->
+    <!-- TAB 1: LIVE MONITOR -->
     <section id="tab-live-table" class="tab-content active">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
-        <div style="font-size:14px; color:var(--text-muted);">
-          Total Teams Active: <strong id="count-total-teams" style="color:#fff;">0</strong>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+        <div style="font-size:13px; color:var(--muted);">
+          Active Crews: <strong id="count-total-teams" style="color:#fff;">0</strong>
         </div>
-        <div style="display:flex; gap:8px;">
-          <select id="sort-leaderboard-select" class="cyber-input" style="padding:6px 12px; font-size:13px; width:auto;">
-            <option value="score">Sort by: Team Score (High to Low)</option>
-            <option value="impostorScore">Sort by: Impostor Score</option>
-            <option value="location">Sort by: Location Progress</option>
-            <option value="id">Sort by: Team ID</option>
+        <div>
+          <select id="sort-select" class="input" style="height:38px; padding:0 10px; font-size:12px; width:auto;">
+            <option value="score">Sort: Team Score</option>
+            <option value="impostorScore">Sort: Impostor Score</option>
+            <option value="location">Sort: Station Progress</option>
+            <option value="id">Sort: Room Code</option>
           </select>
         </div>
       </div>
@@ -82,125 +95,58 @@
         <table class="admin-table">
           <thead>
             <tr>
-              <th>Team ID &amp; PIN</th>
-              <th>Size</th>
-              <th>Players &amp; Secret Roles</th>
-              <th>Current Station</th>
-              <th>Elapsed</th>
-              <th>Errors</th>
-              <th>Sabotages / Glitches</th>
+              <th>Room Code</th>
               <th>Status</th>
+              <th>Players &amp; Secret Roles</th>
+              <th>Station</th>
+              <th>Time</th>
+              <th>Errors</th>
+              <th>Glitches</th>
               <th>Score</th>
-              <th class="non-printable">Emergency Overrides</th>
+              <th class="non-printable">Overrides</th>
             </tr>
           </thead>
           <tbody id="teams-table-body">
-            <tr>
-              <td colspan="10" style="text-align:center; padding:30px; color:var(--text-muted);">
-                Connecting to live stream...
-              </td>
-            </tr>
+            <tr><td colspan="9" style="text-align:center; padding:20px; color:var(--muted);">Connecting...</td></tr>
           </tbody>
         </table>
       </div>
     </section>
 
-    <!-- TAB 2: TEAM ID PRE-GENERATOR -->
-    <section id="tab-pregen" class="tab-content">
-      <div class="cyber-card non-printable">
-        <h3 class="card-title" style="color:var(--amongus-blue);">
-          <span>🎟️</span> Bulk Team ID &amp; PIN Generator
-        </h3>
-        <p style="color:var(--text-muted); font-size:13px; margin-bottom:18px;">
-          Pre-generate official check-in slips with unique Team IDs and 4-digit PINs. Writes directly to Firestore and formats printable slips for physical check-in.
-        </p>
-
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:14px; margin-bottom:18px;">
-          <div>
-            <label class="form-label">Number of Teams</label>
-            <input type="number" id="gen-count" class="cyber-input" value="6" min="1" max="50">
-          </div>
-          <div>
-            <label class="form-label">Team Size</label>
-            <select id="gen-size" class="cyber-input">
-              <option value="4">4 Players (1 Impostor, 3 Crew)</option>
-              <option value="3">3 Players (1 Impostor, 2 Crew)</option>
-              <option value="2">2 Players (Rogue AI Malfunction Duo)</option>
-            </select>
-          </div>
-          <div>
-            <label class="form-label">Team ID Prefix</label>
-            <input type="text" id="gen-prefix" class="cyber-input mono" value="TEAM-" style="text-transform:uppercase;">
-          </div>
-          <div>
-            <label class="form-label">Starting Number</label>
-            <input type="number" id="gen-start-num" class="cyber-input mono" value="101" min="1">
-          </div>
-        </div>
-
-        <div style="display:flex; gap:10px;">
-          <button id="btn-generate-teams" class="btn-primary" style="flex:1;">
-            <span>GENERATE &amp; SAVE TO FIRESTORE</span>
-          </button>
-          <button id="btn-print-slips" class="btn-secondary" style="padding:0 24px;">
-            🖨️ Print Slips
-          </button>
-        </div>
-      </div>
-
-      <!-- Printable Slips Area -->
-      <div id="slips-container" class="print-cards-grid">
-        <!-- Generated team cards injected here -->
-      </div>
-    </section>
-
-    <!-- TAB 3: QR CODE GENERATOR SECTION -->
+    <!-- TAB 2: QR GENERATOR -->
     <section id="tab-qr-codes" class="tab-content">
-      <div class="cyber-card non-printable">
-        <h3 class="card-title" style="color:var(--amongus-yellow);">
-          <span>📷</span> Location QR Code Generator
-        </h3>
-        <p style="color:var(--text-muted); font-size:13px; margin-bottom:16px;">
-          Generates scannable QR codes for each of the 6 PDEU physical stations with their cryptographic secret tokens embedded.
+      <div class="card non-printable" style="margin-bottom:16px;">
+        <h3 class="card-heading" style="color:var(--yellow);">📷 Official Station QR Codes</h3>
+        <p style="color:var(--muted); font-size:12px; margin-bottom:12px;">
+          Players walk up to these physical campus stations and scan with native phone cameras.
         </p>
 
         <div class="form-group">
-          <label class="form-label">Deployed Base Website URL</label>
-          <input type="url" id="qr-base-url" class="cyber-input mono" placeholder="https://yourusername.github.io/joyful-noether/">
-          <span style="font-size:11px; color:var(--text-dim); margin-top:4px; display:block;">
-            Players' native phone cameras will open: {BaseURL}scan.html?loc={id}&amp;token={token}
-          </span>
+          <label class="form-label">DEPLOYED BASE URL</label>
+          <input type="url" id="qr-base-url" class="input mono" placeholder="https://username.github.io/joyful-noether/">
         </div>
 
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-          <button id="btn-render-qrs" class="btn-primary" style="flex:1; min-width:200px;">
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button id="btn-render-qrs" class="btn-primary" style="flex:1; height:46px; font-size:14px;">
             RENDER QR CODES
           </button>
-          <button id="btn-print-qrs" class="btn-secondary" style="padding:0 24px;">
-            🖨️ Print All QR Sheets
+          <button id="btn-print-qrs" class="btn-secondary" style="height:46px;">
+            🖨️ Print Sheets
           </button>
         </div>
       </div>
 
-      <!-- QR Codes Grid -->
-      <div id="qr-codes-container" class="qr-grid">
-        <!-- Rendered QR Cards -->
-      </div>
+      <div id="qr-codes-container" class="qr-grid"></div>
     </section>
 
-    <!-- TAB 4: STATION PUZZLES EDITOR -->
+    <!-- TAB 3: PUZZLE EDITOR -->
     <section id="tab-puzzle-editor" class="tab-content">
-      <div class="cyber-card non-printable">
-        <h3 class="card-title" style="color:var(--amongus-purple);">
-          <span>✏️</span> Real-Time Station Puzzle &amp; Decoy Editor
-        </h3>
-        <p style="color:var(--text-muted); font-size:13px; margin-bottom:18px;">
-          Tweak puzzle questions, answers, and decoy questions directly in Firestore tonight without redeploying code.
+      <div class="card non-printable">
+        <h3 class="card-heading" style="color:var(--purple);">✏️ Station Puzzles &amp; Decoys Editor</h3>
+        <p style="color:var(--muted); font-size:12px; margin-bottom:16px;">
+          Edit questions, answers, and decoy questions directly in Firestore without touching code.
         </p>
-
-        <div id="puzzles-editor-list" style="display:flex; flex-direction:column; gap:18px;">
-          <!-- Dynamically populated station cards -->
-        </div>
+        <div id="puzzles-editor-list" style="display:flex; flex-direction:column; gap:14px;"></div>
       </div>
     </section>
 
@@ -208,32 +154,38 @@
 
   <script type="module">
     import { firebaseService } from './js/firebase-service.js';
-    import { ADMIN_PASSCODE, LOCATIONS, SCORING } from './js/config.js';
-    import { displayMode, formatDuration, showToast } from './js/app.js';
+    import { ADMIN_CREDENTIALS, ADMIN_PASSCODE, LOCATIONS } from './js/config.js';
+    import { displayMode, formatDuration, showToast, vibrate } from './js/app.js';
     import { sound } from './js/sound.js';
 
-    // 1. Passcode Authentication
-    const modal = document.getElementById("passcode-modal");
+    // Login Gate
+    const loginModal = document.getElementById("login-modal");
     const mainView = document.getElementById("admin-main-view");
-    const passInput = document.getElementById("admin-passcode-input");
-    const passForm = document.getElementById("passcode-form");
+    const userIn = document.getElementById("admin-user-input");
+    const passIn = document.getElementById("admin-pass-input");
 
-    passForm.addEventListener("submit", (e) => {
+    document.getElementById("admin-login-form").addEventListener("submit", (e) => {
       e.preventDefault();
-      if (passInput.value.trim() === ADMIN_PASSCODE) {
+      const u = userIn.value.trim();
+      const p = passIn.value.trim();
+
+      const ok = (u === ADMIN_CREDENTIALS.username && p === ADMIN_CREDENTIALS.password) ||
+                 (p === ADMIN_PASSCODE);
+
+      if (ok) {
         sound.success();
-        modal.style.display = "none";
+        vibrate([50, 30, 50]);
+        loginModal.classList.add("hidden");
         mainView.style.display = "block";
         initDashboard();
       } else {
         sound.error();
-        passInput.classList.add("input-shake");
-        setTimeout(() => passInput.classList.remove("input-shake"), 400);
-        showToast("Incorrect passcode", "error");
+        vibrate([100, 50, 100]);
+        showToast("Invalid admin credentials", "error");
       }
     });
 
-    // 2. Tab Navigation
+    // Tab buttons
     document.querySelectorAll(".tab-btn").forEach(btn => {
       btn.addEventListener("click", () => {
         sound.click();
@@ -244,21 +196,18 @@
       });
     });
 
-    // Daylight toggle
-    document.getElementById("btn-toggle-daylight").addEventListener("click", () => {
+    document.getElementById("btn-admin-daylight").addEventListener("click", () => {
       displayMode.toggle();
     });
 
     let liveTeams = [];
 
     function initDashboard() {
-      // Connect live onSnapshot listener for all teams
       firebaseService.subscribeAllTeams((teams) => {
         liveTeams = teams;
         renderLiveTable();
       });
 
-      // Default URL for QR generator
       const currentOrigin = window.location.origin;
       const currentPath = window.location.pathname.replace("admin.html", "");
       document.getElementById("qr-base-url").value = currentOrigin + currentPath;
@@ -267,20 +216,18 @@
       renderPuzzleEditor();
     }
 
-    // 3. Render Live Monitoring Table & Leaderboard
     function renderLiveTable() {
       const tbody = document.getElementById("teams-table-body");
       const countEl = document.getElementById("count-total-teams");
-      const sortBy = document.getElementById("sort-leaderboard-select").value;
+      const sortBy = document.getElementById("sort-select").value;
 
       countEl.textContent = liveTeams.length;
 
       if (!liveTeams.length) {
-        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:30px; color:var(--text-muted);">No teams registered yet. Generate teams using the tab above.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:20px; color:var(--muted);">No crews joined yet. Tell players to open index.html and create a crew!</td></tr>`;
         return;
       }
 
-      // Sort teams
       const sorted = [...liveTeams].sort((a, b) => {
         if (sortBy === "score") return (b.score || 0) - (a.score || 0);
         if (sortBy === "impostorScore") return (b.impostorScore || 0) - (a.impostorScore || 0);
@@ -293,21 +240,17 @@
       sorted.forEach(team => {
         const tr = document.createElement("tr");
 
-        // Compute elapsed time
         const start = team.startTime || Date.now();
         const finish = team.finishTime || Date.now();
         const elapsed = formatDuration(finish - start);
 
-        // Compute wrong attempts count
         let wrongCount = 0;
         if (team.progress) {
           Object.values(team.progress).forEach(p => wrongCount += (p.wrongAttempts || 0));
         }
 
-        // Sabotages / Glitches
         const sabos = team.sabotageEvents || [];
 
-        // Players tags
         let playersHtml = "";
         (team.players || []).forEach(p => {
           const isImp = p.role === "impostor";
@@ -317,45 +260,30 @@
             </span>
           `;
         });
-        if (!playersHtml) playersHtml = `<span style="color:var(--text-dim); font-size:12px;">(Waiting for join)</span>`;
+        if (!playersHtml) playersHtml = `<span style="color:var(--dim); font-size:11px;">(Empty)</span>`;
 
-        // Status badge
-        const currentLocIndex = team.currentLocationIndex || 1;
-        const isDone = team.finishTime || currentLocIndex > LOCATIONS.length;
-        const isWaiting = !team.players || team.players.length === 0;
-        const statusClass = isDone ? "status-finished" : isWaiting ? "status-waiting" : "status-active";
-        const statusText = isDone ? "FINISHED" : isWaiting ? "WAITING" : "IN PROGRESS";
+        const curIdx = team.currentLocationIndex || 1;
+        const isDone = team.finishTime || curIdx > LOCATIONS.length;
+        const isLobby = team.status === "lobby";
+        const statusClass = isDone ? "status-finished" : isLobby ? "status-lobby" : "status-active";
+        const statusText = isDone ? "FINISHED" : isLobby ? "IN LOBBY" : "ACTIVE";
 
-        // Current location name
-        const activeLoc = LOCATIONS.find(l => l.order === currentLocIndex);
-        const locLabel = isDone ? "All 6 Cleared 🏁" : `${currentLocIndex}/6: ${activeLoc ? activeLoc.shortName : 'N/A'}`;
+        const activeLoc = LOCATIONS.find(l => l.order === curIdx);
+        const locLabel = isDone ? "Cleared 🏁" : `${curIdx}/6: ${activeLoc ? activeLoc.shortName : 'N/A'}`;
 
         tr.innerHTML = `
-          <td>
-            <strong style="color:var(--amongus-blue);">${team.id}</strong><br>
-            <span class="mono" style="font-size:12px; color:var(--amongus-yellow);">PIN: ${team.pin || '----'}</span>
-          </td>
-          <td>${team.size || 4}p</td>
+          <td><strong style="color:var(--cyan); font-family:var(--font-display); font-size:15px;">${team.id}</strong></td>
+          <td><span class="status-pill ${statusClass}">${statusText}</span></td>
           <td>${playersHtml}</td>
           <td><strong>${locLabel}</strong></td>
           <td class="mono">${elapsed}</td>
-          <td class="mono" style="color:${wrongCount > 0 ? 'var(--amongus-red)' : 'inherit'};">${wrongCount}</td>
-          <td>
-            <span style="font-size:12px;">${sabos.length} event(s)</span>
-          </td>
-          <td><span class="status-pill ${statusClass}">${statusText}</span></td>
-          <td class="mono">
-            <strong style="color:var(--amongus-green);">${team.score || 0}</strong>
-            ${team.impostorScore ? `<br><small style="color:var(--amongus-red);">Imp: +${team.impostorScore}</small>` : ''}
-          </td>
+          <td class="mono" style="color:${wrongCount > 0 ? 'var(--red)' : 'inherit'};">${wrongCount}</td>
+          <td><span style="font-size:11px;">${sabos.length}</span></td>
+          <td class="mono"><strong style="color:var(--green-light);">${team.score || 0}</strong></td>
           <td class="non-printable">
             <div class="action-btn-group">
-              <button class="btn-sm" onclick="forceUnlockLocation('${team.id}')" title="Force unlock next station">
-                🔓 Unlock Next
-              </button>
-              <button class="btn-sm btn-sm-danger" onclick="forceTriggerSabotage('${team.id}')" title="Test sabotage effect">
-                ⚡ Sabotage
-              </button>
+              <button class="btn-sm" onclick="forceUnlockLocation('${team.id}')" title="Unlock next station">🔓</button>
+              <button class="btn-sm btn-sm-danger" onclick="forceTriggerSabotage('${team.id}')" title="Sabotage">⚡</button>
             </div>
           </td>
         `;
@@ -364,133 +292,51 @@
       });
     }
 
-    document.getElementById("sort-leaderboard-select").addEventListener("change", renderLiveTable);
+    document.getElementById("sort-select").addEventListener("change", renderLiveTable);
     document.getElementById("btn-refresh-data").addEventListener("click", () => {
       sound.click();
       renderLiveTable();
-      showToast("Refreshed team monitor", "info");
+      showToast("Refreshed", "info");
     });
 
-    // 4. Force Unlock Next Location Override
     window.forceUnlockLocation = async (teamId) => {
-      if (!confirm(`Force unlock next station for team ${teamId}? Use this if a physical QR was damaged.`)) return;
+      if (!confirm(`Unlock next station for crew ${teamId}?`)) return;
       sound.click();
-
       const team = await firebaseService.getTeam(teamId);
       if (!team) return;
-
       const cur = team.currentLocationIndex || 1;
       const next = cur + 1;
       const updates = { currentLocationIndex: next };
       if (next > LOCATIONS.length) updates.finishTime = Date.now();
-
       await firebaseService.updateTeam(teamId, updates);
-      showToast(`Unlocked next station for ${teamId}!`, "success");
+      showToast(`Unlocked next station for ${teamId}`, "success");
     };
 
-    // 5. Force Trigger Sabotage / Glitch (Organizer Test Tool)
     window.forceTriggerSabotage = async (teamId) => {
       sound.click();
       const team = await firebaseService.getTeam(teamId);
       if (!team) return;
 
       if (team.size === 2) {
-        // Force Rogue AI Glitch
-        const updates = {
-          glitchState: {
-            active: true,
-            type: "sequence",
-            startedAt: Date.now(),
-            targetDuration: 30
-          }
-        };
-        await firebaseService.updateTeam(teamId, updates);
-        showToast(`Triggered Rogue AI glitch on 2-player team ${teamId}!`, "info");
+        await firebaseService.updateTeam(teamId, {
+          glitchState: { active: true, type: "sequence", startedAt: Date.now(), targetDuration: 30 }
+        });
+        showToast(`Triggered AI glitch on ${teamId}`, "info");
       } else {
-        // Force Map Scramble
         const fakeLoc = LOCATIONS[Math.floor(Math.random() * LOCATIONS.length)];
-        const updates = {
+        await firebaseService.updateTeam(teamId, {
           "sabotageState.mapScramble": {
             active: true,
             fakeLocationId: fakeLoc.id,
             expiresAt: Date.now() + 120000,
-            triggeredBy: "ADMIN_OVERRIDE"
+            triggeredBy: "ADMIN"
           }
-        };
-        await firebaseService.updateTeam(teamId, updates);
-        showToast(`Triggered Map Scramble on team ${teamId}!`, "info");
+        });
+        showToast(`Triggered Map Scramble on ${teamId}`, "info");
       }
     };
 
-    // 6. Bulk Team Generator
-    document.getElementById("btn-generate-teams").addEventListener("click", async () => {
-      sound.click();
-      const count = parseInt(document.getElementById("gen-count").value, 10);
-      const size = parseInt(document.getElementById("gen-size").value, 10);
-      const prefix = document.getElementById("gen-prefix").value.trim().toUpperCase();
-      const startNum = parseInt(document.getElementById("gen-start-num").value, 10);
-
-      const teamsList = [];
-      const slipsContainer = document.getElementById("slips-container");
-      slipsContainer.innerHTML = "";
-
-      for (let i = 0; i < count; i++) {
-        const teamNum = startNum + i;
-        const teamId = `${prefix}${teamNum}`;
-        const pin = String(Math.floor(1000 + Math.random() * 9000));
-
-        const newTeam = {
-          id: teamId,
-          pin: pin,
-          size: size,
-          players: [],
-          currentLocationIndex: 1,
-          progress: {},
-          sabotageState: {
-            puzzleSwap: { active: false, expiresAt: 0 },
-            mapScramble: { active: false, expiresAt: 0 },
-            fakeReject: { active: false }
-          },
-          sabotageEvents: [],
-          glitchState: { active: false },
-          startTime: null,
-          finishTime: null,
-          score: 1000,
-          impostorScore: 0,
-          votes: []
-        };
-
-        teamsList.push(newTeam);
-
-        // Build printable slip card
-        const slip = document.createElement("div");
-        slip.className = "team-slip";
-        slip.innerHTML = `
-          <div class="team-slip-header">
-            <span class="team-slip-id">${teamId}</span>
-            <span class="team-slip-pin">PIN: ${pin}</span>
-          </div>
-          <div style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">
-            Team Capacity: <strong>${size} Players</strong> (${size === 2 ? 'Rogue AI Anomaly Duo' : '1 Secret Impostor, ' + (size-1) + ' Crew'})
-          </div>
-          <div style="font-size:11px; line-height:1.4;">
-            1. Open treasure hunt site on phone camera.<br>
-            2. Enter Team ID <strong>${teamId}</strong> &amp; PIN <strong>${pin}</strong>.<br>
-            3. Read your confidential role and begin at Station 1 (OSAIL Gazebo)!
-          </div>
-        `;
-        slipsContainer.appendChild(slip);
-      }
-
-      await firebaseService.batchCreateTeams(teamsList);
-      showToast(`Generated & saved ${count} teams directly to Firestore!`, "success");
-    });
-
-    document.getElementById("btn-print-slips").addEventListener("click", () => {
-      window.print();
-    });
-
-    // 7. QR Code Generator Section
+    // QR Codes
     function renderQRCodes() {
       let baseUrl = document.getElementById("qr-base-url").value.trim();
       if (!baseUrl.endsWith("/")) baseUrl += "/";
@@ -507,7 +353,7 @@
           <div class="qr-card-title">${loc.order}. ${loc.name}</div>
           <div class="qr-card-token">Token: ${loc.token}</div>
           <div class="qr-canvas-holder" id="qr-target-${loc.id}"></div>
-          <div style="font-size:10px; color:var(--text-dim); margin-bottom:10px; word-break:break-all;">
+          <div style="font-size:9px; color:var(--dim); margin-bottom:8px; word-break:break-all;">
             ${fullUrl}
           </div>
           <button class="btn-sm non-printable" id="btn-dl-${loc.id}">💾 Download PNG</button>
@@ -515,24 +361,20 @@
 
         qrContainer.appendChild(card);
 
-        // Generate QR Code using local library
         const holder = card.querySelector(`#qr-target-${loc.id}`);
         try {
           if (window.QRCode) {
             new QRCode(holder, {
               text: fullUrl,
-              width: 180,
-              height: 180,
+              width: 170,
+              height: 170,
               colorDark: "#000000",
               colorLight: "#ffffff",
               correctLevel: QRCode.CorrectLevel.H
             });
           }
-        } catch (e) {
-          console.warn("QRCode generation issue:", e);
-        }
+        } catch (e) {}
 
-        // Download PNG handler
         card.querySelector(`#btn-dl-${loc.id}`).addEventListener("click", () => {
           const img = holder.querySelector("img") || holder.querySelector("canvas");
           if (!img) return;
@@ -547,63 +389,57 @@
     document.getElementById("btn-render-qrs").addEventListener("click", () => {
       sound.click();
       renderQRCodes();
-      showToast("Updated QR Codes with Base URL", "info");
+      showToast("Updated QR Codes", "info");
     });
 
     document.getElementById("btn-print-qrs").addEventListener("click", () => {
       window.print();
     });
 
-    // 8. Station Puzzle & Decoy Editor
+    // Puzzles Editor
     async function renderPuzzleEditor() {
       const editorList = document.getElementById("puzzles-editor-list");
       const currentLocs = await firebaseService.getLocations();
-
       editorList.innerHTML = "";
 
       currentLocs.forEach(loc => {
         const card = document.createElement("div");
-        card.style.background = "#0f172a";
-        card.style.border = "1px solid #1e293b";
-        card.style.borderRadius = "14px";
-        card.style.padding = "18px";
+        card.style.background = "var(--bg-panel-light)";
+        card.style.border = "2px solid var(--border)";
+        card.style.borderRadius = "12px";
+        card.style.padding = "14px";
 
         card.innerHTML = `
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-            <h4 style="font-size:18px; color:var(--amongus-blue);">${loc.order}. ${loc.name}</h4>
-            <span class="mono" style="font-size:12px; color:var(--amongus-yellow);">Token: ${loc.token}</span>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <strong style="color:var(--cyan); font-family:var(--font-display);">${loc.order}. ${loc.name}</strong>
+            <span class="mono" style="font-size:11px; color:var(--yellow);">Token: ${loc.token}</span>
           </div>
 
-          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
-            <!-- Real Puzzle -->
-            <div style="background:#141b2d; padding:12px; border-radius:8px; border-left:3px solid var(--amongus-blue);">
-              <label class="form-label" style="color:var(--amongus-blue);">Real Puzzle Question</label>
-              <textarea class="cyber-input" id="edit-q-${loc.id}" rows="3" style="font-size:13px; margin-bottom:8px;">${loc.puzzle?.question || ''}</textarea>
-              
-              <div style="display:flex; gap:10px;">
-                <div style="flex:1;">
-                  <label class="form-label" style="font-size:11px;">Correct Answer</label>
-                  <input type="text" class="cyber-input mono" id="edit-a-${loc.id}" value="${loc.puzzle?.answer || ''}" style="font-size:13px;">
-                </div>
-                <div style="flex:1;">
-                  <label class="form-label" style="font-size:11px;">Hint</label>
-                  <input type="text" class="cyber-input" id="edit-h-${loc.id}" value="${loc.puzzle?.hint || ''}" style="font-size:13px;">
-                </div>
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <div>
+              <label class="form-label" style="font-size:10px;">REAL PUZZLE QUESTION</label>
+              <textarea class="input" id="edit-q-${loc.id}" rows="2" style="height:auto; padding:8px; font-size:13px;">${loc.puzzle?.question || ''}</textarea>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+              <div>
+                <label class="form-label" style="font-size:10px;">ANSWER</label>
+                <input type="text" class="input mono" id="edit-a-${loc.id}" value="${loc.puzzle?.answer || ''}" style="height:42px; font-size:13px;">
+              </div>
+              <div>
+                <label class="form-label" style="font-size:10px;">HINT</label>
+                <input type="text" class="input" id="edit-h-${loc.id}" value="${loc.puzzle?.hint || ''}" style="height:42px; font-size:13px;">
               </div>
             </div>
 
-            <!-- Decoy Puzzle (Puzzle Swap Sabotage) -->
-            <div style="background:#141b2d; padding:12px; border-radius:8px; border-left:3px solid var(--amongus-purple);">
-              <label class="form-label" style="color:var(--amongus-purple);">Decoy Question (Used in Puzzle Swap Sabotage)</label>
-              <textarea class="cyber-input" id="edit-decoy-q-${loc.id}" rows="3" style="font-size:13px; margin-bottom:8px;">${loc.decoyPuzzle?.question || ''}</textarea>
-              
-              <label class="form-label" style="font-size:11px;">Decoy Hint</label>
-              <input type="text" class="cyber-input" id="edit-decoy-h-${loc.id}" value="${loc.decoyPuzzle?.hint || ''}" style="font-size:13px;">
+            <div>
+              <label class="form-label" style="font-size:10px; color:var(--purple);">DECOY QUESTION (PUZZLE SWAP SABOTAGE)</label>
+              <textarea class="input" id="edit-decoy-q-${loc.id}" rows="2" style="height:auto; padding:8px; font-size:13px;">${loc.decoyPuzzle?.question || ''}</textarea>
             </div>
           </div>
 
-          <button class="btn-primary" style="margin-top:12px; padding:10px; font-size:14px;" onclick="saveLocationPuzzle('${loc.id}')">
-            💾 Save Changes for ${loc.name}
+          <button class="btn-primary btn-sm" style="margin-top:10px; height:40px;" onclick="saveLocationPuzzle('${loc.id}')">
+            💾 Save Changes
           </button>
         `;
 
@@ -621,13 +457,12 @@
       const a = document.getElementById(`edit-a-${locId}`).value.trim();
       const h = document.getElementById(`edit-h-${locId}`).value.trim();
       const dq = document.getElementById(`edit-decoy-q-${locId}`).value.trim();
-      const dh = document.getElementById(`edit-decoy-h-${locId}`).value.trim();
 
       loc.puzzle = { question: q, answer: a, hint: h, type: loc.puzzle?.type || "text" };
-      loc.decoyPuzzle = { question: dq, hint: dh, type: "text" };
+      loc.decoyPuzzle = { question: dq, hint: "Look closely.", type: "text" };
 
       await firebaseService.saveLocation(loc);
-      showToast(`Saved updates for ${loc.name}!`, "success");
+      showToast(`Saved ${loc.name}`, "success");
     };
   </script>
 </body>

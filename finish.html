@@ -2,12 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#121326">
   <title>Mission Debrief — PDEU Among Us</title>
-  
   <link rel="stylesheet" href="css/style.css">
-  
-  <!-- Firebase Compat CDN -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
@@ -15,147 +13,137 @@
 
   <!-- App Header -->
   <header class="app-header">
-    <div class="header-brand">
-      <span class="brand-icon">🏆</span>
-      <h1 class="brand-title">EXPEDITION FINISH</h1>
+    <div class="header-left">
+      <span class="header-icon">🏆</span>
+      <h2 class="header-title">MISSION DEBRIEF</h2>
     </div>
-    <div class="header-actions">
-      <button id="btn-toggle-daylight" class="icon-btn" title="Toggle Outdoor Daylight Mode">☀️ Contrast</button>
-      <button id="btn-toggle-sound" class="icon-btn" title="Toggle Audio">🔊 Sound</button>
+    <div class="header-right">
+      <button id="btn-daylight" class="btn-icon" onclick="toggleDaylight()" title="Contrast">☀️</button>
+      <button id="btn-snd" class="btn-icon" onclick="toggleSnd()" title="Sound">🔊</button>
     </div>
   </header>
 
-  <main class="main-content">
+  <main class="screen-body">
 
     <!-- Mission Completed Header Card -->
-    <div class="cyber-card" style="text-align: center; border-color: var(--amongus-green); box-shadow: 0 0 25px rgba(34, 197, 94, 0.35);">
-      <div style="font-size: 54px; margin-bottom: 8px;">🛸</div>
-      <h2 style="font-size: 26px; color: var(--amongus-green); margin-bottom: 6px;">EXPEDITION COMPLETE</h2>
-      <p style="color: var(--text-muted); font-size: 14px;">
-        All 6 PDEU Campus Stations successfully mapped and resolved.
-      </p>
+    <div class="card text-center" style="border-color:var(--green-light); padding:24px 16px;">
+      <div style="font-size:48px; margin-bottom:4px;">🛸</div>
+      <h2 class="font-display" style="color:var(--green-light); font-size:22px; margin-bottom:4px;">EXPEDITION COMPLETE</h2>
+      <p style="color:var(--muted); font-size:13px;">All 6 PDEU Campus Stations successfully mapped.</p>
 
       <!-- Stats Grid -->
-      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 20px;">
-        <div style="background: var(--bg-surface-elevated); padding: 12px 8px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
-          <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">TOTAL TIME</div>
-          <div id="stat-total-time" class="mono" style="font-size: 18px; color: var(--amongus-blue); font-weight: 700; margin-top: 4px;">--:--</div>
+      <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-top:16px;">
+        <div style="background:var(--bg-panel-light); padding:10px 4px; border-radius:var(--radius-sm); border:1px solid var(--border);">
+          <div style="font-size:10px; color:var(--muted); font-weight:700;">TOTAL TIME</div>
+          <div id="stat-total-time" class="mono" style="font-size:16px; color:var(--cyan); font-weight:700; margin-top:2px;">--:--</div>
         </div>
-        <div style="background: var(--bg-surface-elevated); padding: 12px 8px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
-          <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">WRONG TRIES</div>
-          <div id="stat-wrong-attempts" class="mono" style="font-size: 18px; color: var(--amongus-red); font-weight: 700; margin-top: 4px;">0</div>
+        <div style="background:var(--bg-panel-light); padding:10px 4px; border-radius:var(--radius-sm); border:1px solid var(--border);">
+          <div style="font-size:10px; color:var(--muted); font-weight:700;">ERRORS</div>
+          <div id="stat-wrong-attempts" class="mono" style="font-size:16px; color:var(--red); font-weight:700; margin-top:2px;">0</div>
         </div>
-        <div style="background: var(--bg-surface-elevated); padding: 12px 8px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
-          <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">SABOTAGES</div>
-          <div id="stat-sabotage-count" class="mono" style="font-size: 18px; color: var(--amongus-yellow); font-weight: 700; margin-top: 4px;">0</div>
+        <div style="background:var(--bg-panel-light); padding:10px 4px; border-radius:var(--radius-sm); border:1px solid var(--border);">
+          <div style="font-size:10px; color:var(--muted); font-weight:700;">GLITCHES</div>
+          <div id="stat-sabotage-count" class="mono" style="font-size:16px; color:var(--yellow); font-weight:700; margin-top:2px;">0</div>
         </div>
       </div>
     </div>
 
-    <!-- 1. VOTING SECTION (For 3-4 Player Teams) -->
-    <div id="voting-section" class="cyber-card" style="display: none;">
-      <h3 class="card-title" style="color: var(--amongus-red); font-size: 20px;">
-        <span>🚨</span> EMERGENCY ACCUSATION: WHO WAS THE IMPOSTOR?
+    <!-- 1. VOTING SECTION (3-4 Player Teams) -->
+    <div id="voting-section" class="card hidden">
+      <h3 class="font-display" style="color:var(--red); font-size:17px; margin-bottom:4px;">
+        🚨 EMERGENCY MEETING: WHO WAS THE IMPOSTOR?
       </h3>
-      <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 18px;">
-        Each crewmate must cast one private vote from their phone. Who was secretly sabotaging your screens throughout PDEU?
+      <p style="color:var(--muted); font-size:12px; margin-bottom:14px;">
+        Cast your private accusation. Who was sabotaging your screens?
       </p>
 
-      <!-- Candidate Selection -->
-      <div id="voting-candidates" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px;">
-        <!-- Dynamically rendered -->
+      <div id="voting-candidates" style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px;">
+        <!-- Rendered dynamically -->
       </div>
 
       <button id="btn-submit-vote" class="btn-primary btn-danger">
-        <span>CONFIRM ACCUSATION</span>
+        CONFIRM ACCUSATION
       </button>
 
-      <!-- Live Voting Status -->
-      <div id="vote-tally-status" style="margin-top: 14px; font-size: 13px; color: var(--text-muted); text-align: center;">
+      <div id="vote-tally-status" style="margin-top:10px; font-size:12px; color:var(--muted); text-align:center;">
         Waiting for votes...
       </div>
     </div>
 
-    <!-- 2. REVEAL EJECTION BANNER (Appears after voting) -->
-    <div id="reveal-banner" class="cyber-card" style="display: none; text-align: center; background: #000; border: 3px solid var(--amongus-blue);">
-      <div id="eject-animation-text" style="font-family: var(--font-heading); font-size: 22px; color: #fff; margin: 16px 0; line-height: 1.4;">
-        <!-- Animated reveal text -->
-      </div>
-      <div id="eject-verdict-tag" style="font-family: var(--font-mono); font-size: 16px; font-weight: 700; margin-bottom: 10px;">
-        <!-- Team correctly caught / failed -->
-      </div>
+    <!-- 2. REVEAL EJECTION BANNER (After voting) -->
+    <div id="reveal-banner" class="card text-center hidden" style="background:#000; border:3px solid var(--cyan); padding:20px 14px;">
+      <div id="eject-text" style="font-family:var(--font-display); font-size:18px; color:#fff; line-height:1.35; margin:10px 0;"></div>
+      <div id="eject-verdict" style="font-family:var(--font-mono); font-size:14px; font-weight:700;"></div>
     </div>
 
-    <!-- 3. ROGUE AI SUMMARY (For 2-Player Teams) -->
-    <div id="rogue-ai-summary" class="cyber-card" style="display: none; text-align: center;">
-      <h3 style="color: var(--amongus-yellow); font-size: 22px; margin-bottom: 8px;">
+    <!-- 3. ROGUE AI SUMMARY (2-Player Teams) -->
+    <div id="rogue-ai-summary" class="card text-center hidden">
+      <h3 class="font-display" style="color:var(--yellow); font-size:18px; margin-bottom:4px;">
         ⚡ ROGUE AI OVERRIDDEN!
       </h3>
-      <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 18px;">
+      <p style="color:var(--muted); font-size:12px; margin-bottom:14px;">
         You operated as a synchronized duo and stabilized the malfunctioning campus navigation system.
       </p>
 
-      <div style="display: flex; justify-content: space-around; background: var(--bg-surface-elevated); padding: 14px; border-radius: var(--radius-md);">
+      <div style="display:flex; justify-content:space-around; background:var(--bg-panel-light); padding:12px; border-radius:var(--radius-md);">
         <div>
-          <div style="font-size: 12px; color: var(--text-muted);">Glitches Survived</div>
-          <div id="ai-glitches-count" class="mono" style="font-size: 20px; color: var(--amongus-yellow); font-weight: 700;">3</div>
+          <div style="font-size:11px; color:var(--muted);">Glitches Survived</div>
+          <div id="ai-glitches-count" class="mono" style="font-size:18px; color:var(--yellow); font-weight:700;">3</div>
         </div>
         <div>
-          <div style="font-size: 12px; color: var(--text-muted);">Avg Recovery Time</div>
-          <div id="ai-avg-recovery" class="mono" style="font-size: 20px; color: #22c55e; font-weight: 700;">14s</div>
+          <div style="font-size:11px; color:var(--muted);">Avg Recovery</div>
+          <div id="ai-avg-recovery" class="mono" style="font-size:18px; color:var(--green-light); font-weight:700;">14s</div>
         </div>
       </div>
     </div>
 
     <!-- Final Score Breakdown Card -->
-    <div class="cyber-card">
-      <h3 class="card-title" style="color: var(--amongus-blue); font-size: 20px;">
-        <span>📊</span> FINAL SCORE BREAKDOWN
-      </h3>
+    <div class="card">
+      <h3 class="card-heading" style="color:var(--cyan);">📊 FINAL SCORE BREAKDOWN</h3>
       
-      <div style="display: flex; flex-direction: column; gap: 8px; font-size: 14px; margin-bottom: 16px;">
-        <div style="display: flex; justify-content: space-between;">
-          <span style="color: var(--text-muted);">Baseline Score:</span>
+      <div style="display:flex; flex-direction:column; gap:6px; font-size:13px; margin-bottom:12px;">
+        <div style="display:flex; justify-content:space-between;">
+          <span style="color:var(--muted);">Baseline Score:</span>
           <span class="mono">+1000 pts</span>
         </div>
-        <div style="display: flex; justify-content: space-between;">
-          <span style="color: var(--text-muted);">Total Time Penalty:</span>
-          <span id="score-time-penalty" class="mono" style="color: var(--amongus-red);">-0 pts</span>
+        <div style="display:flex; justify-content:space-between;">
+          <span style="color:var(--muted);">Time Penalty:</span>
+          <span id="score-time-penalty" class="mono" style="color:var(--red);">-0 pts</span>
         </div>
-        <div style="display: flex; justify-content: space-between;">
-          <span style="color: var(--text-muted);">Wrong Attempts Penalty (10 pts ea):</span>
-          <span id="score-wrong-penalty" class="mono" style="color: var(--amongus-red);">-0 pts</span>
+        <div style="display:flex; justify-content:space-between;">
+          <span style="color:var(--muted);">Wrong Attempts (-10 ea):</span>
+          <span id="score-wrong-penalty" class="mono" style="color:var(--red);">-0 pts</span>
         </div>
-        <div style="display: flex; justify-content: space-between;">
-          <span style="color: var(--text-muted);">Sabotages Faced Penalty (5 pts ea):</span>
-          <span id="score-sabotage-penalty" class="mono" style="color: var(--amongus-red);">-0 pts</span>
+        <div style="display:flex; justify-content:space-between;">
+          <span style="color:var(--muted);">Sabotages Faced (-5 ea):</span>
+          <span id="score-sabotage-penalty" class="mono" style="color:var(--red);">-0 pts</span>
         </div>
-        <div id="score-bonus-row" style="display: flex; justify-content: space-between;">
-          <span style="color: var(--text-muted);">Recovery Speed Bonus:</span>
-          <span id="score-recovery-bonus" class="mono" style="color: var(--amongus-green);">+0 pts</span>
+        <div style="display:flex; justify-content:space-between;">
+          <span style="color:var(--muted);">Recovery / Catch Bonus:</span>
+          <span id="score-recovery-bonus" class="mono" style="color:var(--green-light);">+0 pts</span>
         </div>
-        <div style="border-top: 1px solid var(--border-subtle); padding-top: 8px; display: flex; justify-content: space-between; font-weight: 700; font-size: 18px;">
-          <span>FINAL TEAM SCORE:</span>
-          <span id="score-total" class="mono" style="color: var(--amongus-blue);">0 PTS</span>
+        <div style="border-top:1px solid var(--border); padding-top:8px; display:flex; justify-content:space-between; font-weight:700; font-size:16px;">
+          <span>FINAL SCORE:</span>
+          <span id="score-total" class="mono" style="color:var(--cyan);">0 PTS</span>
         </div>
       </div>
     </div>
 
-    <!-- Official Finish Desk Souvenir Redemption Card -->
-    <div class="cyber-card" style="text-align: center; background: radial-gradient(circle, #1a2236 0%, #0f172a 100%); border: 2px dashed var(--amongus-yellow);">
-      <div style="font-size: 12px; font-family: var(--font-mono); color: var(--amongus-yellow); letter-spacing: 1px; margin-bottom: 6px;">
-        PHYSICAL SOUVENIR STAMP PASSPORT
+    <!-- Official Souvenir Redemption Card -->
+    <div class="card text-center" style="background:radial-gradient(circle, #1a2236 0%, #16182e 100%); border:2px dashed var(--yellow);">
+      <div style="font-size:11px; font-family:var(--font-mono); color:var(--yellow); letter-spacing:1px; margin-bottom:4px;">
+        FINISH DESK SOUVENIR PASSPORT
       </div>
-      <h3 id="souvenir-badge-title" style="font-size: 24px; color: #ffffff; margin-bottom: 12px;">
+      <h3 id="souvenir-badge-title" class="font-display" style="font-size:20px; color:#ffffff; margin-bottom:8px;">
         SURVIVED THE SKELD
       </h3>
-      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
-        Show this verification certificate at the finish desk to claim your physical souvenir sticker!
+      <p style="font-size:12px; color:var(--muted); margin-bottom:12px;">
+        Show this verification code to claim your souvenir sticker!
       </p>
 
-      <div style="background: #000; padding: 12px 18px; border-radius: var(--radius-md); display: inline-block; border: 1px solid var(--border-subtle); margin-bottom: 12px;">
-        <span style="font-size: 11px; color: var(--text-muted); display: block;">OFFICIAL REDEMPTION CODE:</span>
-        <span id="souvenir-code" class="mono" style="font-size: 22px; color: var(--amongus-yellow); font-weight: 800; letter-spacing: 2px;">
+      <div style="background:#000; padding:10px 16px; border-radius:var(--radius-md); display:inline-block; border:1px solid var(--border);">
+        <span style="font-size:10px; color:var(--muted); display:block;">REDEMPTION CODE:</span>
+        <span id="souvenir-code" class="mono" style="font-size:20px; color:var(--yellow); font-weight:800; letter-spacing:2px;">
           PDEU-CREW-XXXX
         </span>
       </div>
@@ -165,27 +153,21 @@
 
   <script type="module">
     import { firebaseService } from './js/firebase-service.js';
-    import { session, displayMode, formatDuration, showToast } from './js/app.js';
+    import { session, displayMode, formatDuration, showToast, vibrate } from './js/app.js';
     import { sound } from './js/sound.js';
     import { SCORING } from './js/config.js';
 
-    // Verify Session
+    displayMode.apply();
+
     const user = session.requireAuth();
-    if (!user) {
-      window.location.href = "index.html";
-    }
+    if (!user) { window.location.href = "index.html"; }
 
-    // Daylight & Audio Controls
-    document.getElementById("btn-toggle-daylight").addEventListener("click", () => {
-      displayMode.toggle();
-    });
-
-    const soundBtn = document.getElementById("btn-toggle-sound");
-    soundBtn.addEventListener("click", () => {
-      const isMuted = sound.toggleMute();
-      soundBtn.textContent = isMuted ? "🔇 Muted" : "🔊 Sound";
-    });
-    if (sound.getMuted()) soundBtn.textContent = "🔇 Muted";
+    window.toggleDaylight = () => { displayMode.toggle(); };
+    window.toggleSnd = () => {
+      const m = sound.toggleMute();
+      document.getElementById("btn-snd").textContent = m ? "🔇" : "🔊";
+    };
+    if (sound.getMuted()) document.getElementById("btn-snd").textContent = "🔇";
 
     let currentTeam = null;
     let selectedCandidateId = null;
@@ -193,7 +175,7 @@
     async function loadFinishPage() {
       currentTeam = await firebaseService.getTeam(user.teamId);
       if (!currentTeam) {
-        showToast("Team record not found!", "error");
+        showToast("Crew record not found!", "error");
         return;
       }
 
@@ -205,23 +187,21 @@
 
       document.getElementById("stat-total-time").textContent = formatDuration(elapsedMs);
 
-      // Compute Total Wrong Attempts
+      // Wrong attempts
       let totalWrong = 0;
       if (currentTeam.progress) {
-        Object.values(currentTeam.progress).forEach(p => {
-          totalWrong += (p.wrongAttempts || 0);
-        });
+        Object.values(currentTeam.progress).forEach(p => totalWrong += (p.wrongAttempts || 0));
       }
       document.getElementById("stat-wrong-attempts").textContent = totalWrong;
 
-      // Compute Sabotage Events Count
+      // Sabotages
       const sabotageEvents = currentTeam.sabotageEvents || [];
       const sabotageCount = sabotageEvents.length;
       document.getElementById("stat-sabotage-count").textContent = sabotageCount;
 
-      // 1. TEAMS OF 2 PLAYERS: ROGUE AI SUMMARY
+      // 1. 2-PLAYER TEAMS: ROGUE AI
       if (currentTeam.size === 2 || user.role === "survivor") {
-        document.getElementById("rogue-ai-summary").style.display = "block";
+        document.getElementById("rogue-ai-summary").classList.remove("hidden");
         const aiGlitches = sabotageEvents.filter(e => e.type === "aiGlitch");
         document.getElementById("ai-glitches-count").textContent = aiGlitches.length;
 
@@ -236,21 +216,18 @@
         const avgRec = aiGlitches.length ? Math.round(totalRecovery / aiGlitches.length) : 0;
         document.getElementById("ai-avg-recovery").textContent = `${avgRec}s`;
 
-        // Calculate score
         const timePen = totalMinutes * SCORING.minutePenalty;
         const wrongPen = totalWrong * SCORING.wrongAttemptPenalty;
         const saboPen = sabotageCount * SCORING.sabotagePenalty;
         const recoveryBonus = fastCount * SCORING.fastRecoveryBonus;
-
         const finalScore = Math.max(0, SCORING.baseline - timePen - wrongPen - saboPen + recoveryBonus);
 
         renderScoreBreakdown(timePen, wrongPen, saboPen, recoveryBonus, finalScore);
-        setupSouvenirStamp("Debugged the Ship ⚡", "AI", finalScore);
+        setupSouvenirStamp("Debugged the Ship ⚡", "AI");
 
-        // Save computed score to Firestore
         firebaseService.updateTeam(user.teamId, { score: finalScore });
       } 
-      // 2. TEAMS OF 3-4 PLAYERS: VOTING & REVEAL
+      // 2. 3-4 PLAYER TEAMS: VOTING
       else {
         setupVotingSystem(totalMinutes, totalWrong, sabotageCount);
       }
@@ -265,48 +242,42 @@
     }
 
     function setupVotingSystem(totalMinutes, totalWrong, sabotageCount) {
-      const votingSection = document.getElementById("voting-section");
-      votingSection.style.display = "block";
+      document.getElementById("voting-section").classList.remove("hidden");
 
       const candidatesContainer = document.getElementById("voting-candidates");
       const submitBtn = document.getElementById("btn-submit-vote");
-
       const players = currentTeam.players || [];
       const realImpostor = players.find(p => p.role === "impostor");
 
-      // Non-impostor teammates to vote for
       candidatesContainer.innerHTML = "";
       players.forEach(p => {
-        // A player cannot vote for themselves
-        if (p.playerId === user.playerId) return;
+        if (p.playerId === user.playerId) return; // Cannot vote for oneself
 
         const card = document.createElement("div");
-        card.className = "sabotage-card";
+        card.className = "lobby-slot lobby-slot-filled";
         card.style.cursor = "pointer";
         card.dataset.id = p.playerId;
         card.innerHTML = `
-          <div class="sabotage-info">
-            <span style="font-size: 24px;">🧑‍🚀</span>
-            <div>
-              <div class="sabotage-name">${p.name}</div>
-              <div class="sabotage-desc">Teammate • ID: ${p.playerId.slice(-4)}</div>
-            </div>
+          <div class="slot-color" style="background:#ef4444"></div>
+          <div class="slot-info">
+            <span class="slot-name">${p.name}</span>
+            <span class="slot-id">Suspect ID: ${p.playerId.slice(-4)}</span>
           </div>
-          <input type="radio" name="impostor-candidate" value="${p.playerId}">
+          <input type="radio" name="suspect" value="${p.playerId}">
         `;
 
         card.addEventListener("click", () => {
           sound.click();
           selectedCandidateId = p.playerId;
           card.querySelector("input").checked = true;
-          document.querySelectorAll("#voting-candidates .sabotage-card").forEach(c => c.style.borderColor = "#334155");
-          card.style.borderColor = "var(--amongus-red)";
+          document.querySelectorAll("#voting-candidates .lobby-slot").forEach(c => c.style.borderColor = "var(--border)");
+          card.style.borderColor = "var(--red)";
+          vibrate([30]);
         });
 
         candidatesContainer.appendChild(card);
       });
 
-      // Check if this player already voted
       const existingVotes = currentTeam.votes || [];
       const myVote = existingVotes.find(v => v.playerId === user.playerId);
 
@@ -318,7 +289,7 @@
 
       submitBtn.addEventListener("click", async () => {
         if (!selectedCandidateId) {
-          showToast("Please select a suspect teammate to accuse!", "error");
+          showToast("Select a teammate to accuse!", "error");
           return;
         }
 
@@ -339,12 +310,11 @@
         renderVotingResults(newVotes, players, realImpostor, totalMinutes, totalWrong, sabotageCount);
       });
 
-      // Real-time listener for teammate votes
       firebaseService.subscribeTeam(user.teamId, (updated) => {
         if (!updated) return;
         currentTeam = updated;
         const votes = updated.votes || [];
-        document.getElementById("vote-tally-status").textContent = `Votes Recorded: ${votes.length} / ${Math.max(1, players.length - 1)}`;
+        document.getElementById("vote-tally-status").textContent = `Votes Cast: ${votes.length} / ${Math.max(1, players.length - 1)}`;
         if (myVote || votes.some(v => v.playerId === user.playerId)) {
           renderVotingResults(votes, players, realImpostor, totalMinutes, totalWrong, sabotageCount);
         }
@@ -352,19 +322,15 @@
     }
 
     function renderVotingResults(votes, players, realImpostor, totalMinutes, totalWrong, sabotageCount) {
-      const revealBanner = document.getElementById("reveal-banner");
-      revealBanner.style.display = "block";
+      const banner = document.getElementById("reveal-banner");
+      banner.classList.remove("hidden");
 
-      const ejectText = document.getElementById("eject-animation-text");
-      const verdictTag = document.getElementById("eject-verdict-tag");
+      const ejectText = document.getElementById("eject-text");
+      const verdict = document.getElementById("eject-verdict");
 
-      // Tally votes
       const voteCounts = {};
-      votes.forEach(v => {
-        voteCounts[v.guessedId] = (voteCounts[v.guessedId] || 0) + 1;
-      });
+      votes.forEach(v => { voteCounts[v.guessedId] = (voteCounts[v.guessedId] || 0) + 1; });
 
-      // Find highest voted
       let maxVotes = 0;
       let accusedId = null;
       for (const id in voteCounts) {
@@ -380,45 +346,40 @@
       if (isImpostorCaught) {
         sound.success();
         ejectText.innerHTML = `
-          <span style="font-size: 40px; display:block; margin-bottom:8px;">🚀</span>
-          <strong>${accusedPlayer.name}</strong> was An Impostor.<br>
-          <span style="color: #22c55e; font-size: 16px;">0 Impostors remain.</span>
+          🚀 <strong>${accusedPlayer.name}</strong> was An Impostor.<br>
+          <span style="color:var(--green-light); font-size:14px;">0 Impostors remain.</span>
         `;
-        verdictTag.style.color = "var(--amongus-green)";
-        verdictTag.textContent = "🏆 THE CREW CORRECTLY CAUGHT THE IMPOSTOR!";
-        setupSouvenirStamp(user.role === 'impostor' ? 'Caught by Crew' : 'Caught the Impostor 🏆', 'CREW', 1000);
+        verdict.style.color = "var(--green-light)";
+        verdict.textContent = "🏆 THE CREW CAUGHT THE IMPOSTOR!";
+        setupSouvenirStamp(user.role === 'impostor' ? 'Caught by Crew' : 'Caught the Impostor 🏆', 'CREW');
       } else {
         sound.error();
-        const impostorName = realImpostor ? realImpostor.name : "Unknown";
+        const impName = realImpostor ? realImpostor.name : "Unknown";
         ejectText.innerHTML = `
-          <span style="font-size: 40px; display:block; margin-bottom:8px;">🌌</span>
-          <strong>${accusedPlayer ? accusedPlayer.name : 'Nobody'}</strong> was not An Impostor.<br>
-          <span style="color: var(--amongus-red); font-size: 16px;">The real Impostor was: <strong>${impostorName}</strong>!</span>
+          🌌 <strong>${accusedPlayer ? accusedPlayer.name : 'Nobody'}</strong> was not An Impostor.<br>
+          <span style="color:var(--red); font-size:14px;">The real Impostor was: <strong>${impName}</strong>!</span>
         `;
-        verdictTag.style.color = "var(--amongus-red)";
-        verdictTag.textContent = "😈 THE IMPOSTOR DECEIVED THE CREW AND GOT AWAY!";
-        setupSouvenirStamp(user.role === 'impostor' ? 'Got Away With It 😈' : 'Survived The Hunt', user.role === 'impostor' ? 'IMPO' : 'CREW', 850);
+        verdict.style.color = "var(--red)";
+        verdict.textContent = "😈 THE IMPOSTOR GOT AWAY!";
+        setupSouvenirStamp(user.role === 'impostor' ? 'Got Away With It 😈' : 'Survived The Hunt', user.role === 'impostor' ? 'IMPO' : 'CREW');
       }
 
-      // Compute final scores
       const timePen = totalMinutes * SCORING.minutePenalty;
       const wrongPen = totalWrong * SCORING.wrongAttemptPenalty;
       const saboPen = sabotageCount * SCORING.sabotagePenalty;
       const crewBonus = isImpostorCaught ? 100 : 0;
-
       const crewScore = Math.max(0, SCORING.baseline - timePen - wrongPen - saboPen + crewBonus);
       const impostorScore = isImpostorCaught ? SCORING.impostorCaughtBonus : SCORING.impostorEscapeBonus;
 
       renderScoreBreakdown(timePen, wrongPen, saboPen, crewBonus, crewScore);
 
-      // Save scores to team doc
       firebaseService.updateTeam(user.teamId, {
         score: crewScore,
         impostorScore: impostorScore
       });
     }
 
-    function setupSouvenirStamp(badgeTitle, prefix, score) {
+    function setupSouvenirStamp(badgeTitle, prefix) {
       document.getElementById("souvenir-badge-title").textContent = badgeTitle;
       const randHex = Math.floor(1000 + Math.random() * 9000).toString(16).toUpperCase();
       document.getElementById("souvenir-code").textContent = `PDEU-${prefix}-${randHex}`;

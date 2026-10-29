@@ -2,184 +2,192 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Role Reveal — PDEU Campus Hunt</title>
-  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#121326">
+  <title>Role Reveal — PDEU Among Us</title>
   <link rel="stylesheet" href="css/style.css">
-  
-  <!-- Firebase Compat CDN -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
-  <!-- App Header -->
-  <header class="app-header">
-    <div class="header-brand">
-      <span class="brand-icon">🚀</span>
-      <h1 class="brand-title">CONFIDENTIAL ROLE ASSIGNMENT</h1>
-    </div>
-    <div class="header-actions">
-      <button id="btn-toggle-daylight" class="icon-btn" title="Toggle Outdoor Daylight Mode">☀️ Contrast</button>
-      <button id="btn-toggle-sound" class="icon-btn" title="Toggle Audio">🔊 Sound</button>
-    </div>
-  </header>
-
-  <!-- Role Reveal Container -->
-  <main class="main-content">
-    <div id="role-container" class="cyber-card role-reveal-container">
-      <div style="font-size: 14px; font-family: var(--font-mono); color: var(--text-muted); letter-spacing: 1px;">
-        SECURITY CLEARANCE LEVEL 5
+  <!-- Fullscreen Role Reveal -->
+  <div id="reveal-screen" class="screen active">
+    <div class="reveal-wrapper">
+      
+      <!-- Pre-reveal suspense -->
+      <div id="reveal-suspense" class="reveal-phase">
+        <div class="reveal-suspense-text">DECRYPTING<br>ASSIGNMENT</div>
+        <div class="reveal-dots"><span>.</span><span>.</span><span>.</span></div>
       </div>
 
-      <!-- Avatar & Glow Frame -->
-      <div id="role-avatar-frame" class="role-avatar-frame">
-        <span id="role-icon">❓</span>
-      </div>
+      <!-- Actual reveal (shown after 2.5s delay) -->
+      <div id="reveal-content" class="reveal-phase hidden">
+        <!-- Among Us Character -->
+        <div id="reveal-character" class="reveal-character">
+          <svg viewBox="0 0 120 160" width="140" height="185">
+            <rect x="6" y="50" width="22" height="60" rx="10" fill="#0a2140" stroke="currentColor" stroke-width="3"/>
+            <path d="M 30 28 C 30 10, 100 10, 100 28 L 100 115 C 100 135, 88 145, 78 148 L 72 148 C 64 148, 62 135, 62 125 L 62 125 C 62 135, 56 148, 48 148 L 42 148 C 32 148, 30 130, 30 115 Z"
+                  class="reveal-bean-body" stroke="#eaeaea" stroke-width="3.5"/>
+            <ellipse cx="78" cy="55" rx="22" ry="16" class="reveal-bean-visor" stroke="#eaeaea" stroke-width="3"/>
+            <ellipse cx="84" cy="49" rx="10" ry="6" fill="#ffffff" opacity="0.5"/>
+          </svg>
+        </div>
 
-      <!-- Role Title Banner -->
-      <h2 id="role-title" class="role-badge-banner">
-        DECRYPTING ROLE...
-      </h2>
+        <!-- Role Title -->
+        <h1 id="reveal-title" class="reveal-title">CREWMATE</h1>
 
-      <!-- Detailed Role Instructions & Flavor Text -->
-      <div id="role-description" style="font-size: 15px; line-height: 1.6; color: var(--text-main); margin-bottom: 28px; text-align: left; background: var(--bg-surface-elevated); padding: 18px; border-radius: var(--radius-md); border-left: 4px solid var(--border-subtle);">
-        Analyzing neural transmission...
-      </div>
+        <!-- Role Subtitle / Flavor -->
+        <p id="reveal-subtitle" class="reveal-subtitle">Assigned by PDEU Mission Control</p>
 
-      <!-- Impostor Sabotage Cheat Sheet (Only rendered for Impostor) -->
-      <div id="impostor-briefing" style="display: none; text-align: left; margin-bottom: 24px;">
-        <h3 style="color: var(--amongus-red); font-size: 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
-          <span>💀</span> DIGITAL SABOTAGE WEAPONS (Single-Use Each):
-        </h3>
-        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
-          <div style="background: rgba(168, 85, 247, 0.15); border-left: 3px solid #a855f7; padding: 8px 12px; border-radius: 4px;">
-            <strong>🧩 Puzzle Swap (90s):</strong> Swaps teammates' screen to a decoy puzzle. Real answers won't work!
+        <!-- Role Description Card -->
+        <div id="reveal-desc" class="card reveal-desc-card">
+          Loading...
+        </div>
+
+        <!-- Impostor Abilities (hidden for non-impostors) -->
+        <div id="reveal-abilities" class="hidden">
+          <div class="ability-card ability-purple">
+            <span class="ability-icon">🧩</span>
+            <div>
+              <strong>Puzzle Swap</strong>
+              <p>Silently swaps teammates' puzzle with a decoy for 90s</p>
+            </div>
           </div>
-          <div style="background: rgba(234, 179, 8, 0.15); border-left: 3px solid #eab308; padding: 8px 12px; border-radius: 4px;">
-            <strong>🗺️ Map Scramble (2 min):</strong> Falsely highlights a wrong campus location, leading your team astray.
+          <div class="ability-card ability-yellow">
+            <span class="ability-icon">🗺️</span>
+            <div>
+              <strong>Map Scramble</strong>
+              <p>Points their radar to the wrong location for 2 min</p>
+            </div>
           </div>
-          <div style="background: rgba(239, 68, 68, 0.15); border-left: 3px solid #ef4444; padding: 8px 12px; border-radius: 4px;">
-            <strong>❌ Fake Reject:</strong> Traps the next correct puzzle answer, falsely marking it INCORRECT once.
+          <div class="ability-card ability-red">
+            <span class="ability-icon">❌</span>
+            <div>
+              <strong>Fake Reject</strong>
+              <p>Their next correct answer is falsely marked wrong</p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Action Button -->
-      <button id="btn-proceed-map" class="btn-primary">
-        <span>PROCEED TO CAMPUS RADAR</span>
-        <span>➔</span>
-      </button>
-
-      <div style="margin-top: 14px; font-size: 12px; color: var(--text-dim);">
-        Keep your screen hidden from adjacent teammates!
+        <!-- Proceed Button -->
+        <button id="btn-proceed" class="btn-primary btn-full-bottom" onclick="proceed()">
+          PROCEED TO CAMPUS RADAR →
+        </button>
       </div>
     </div>
-  </main>
+  </div>
 
   <script type="module">
-    import { session, displayMode, showToast } from './js/app.js';
+    import { session, displayMode, showToast, vibrate } from './js/app.js';
     import { sound } from './js/sound.js';
     import { firebaseService } from './js/firebase-service.js';
 
-    // Controls
-    document.getElementById("btn-toggle-daylight").addEventListener("click", () => {
-      displayMode.toggle();
-    });
+    displayMode.apply();
 
-    const soundBtn = document.getElementById("btn-toggle-sound");
-    soundBtn.addEventListener("click", () => {
-      const isMuted = sound.toggleMute();
-      soundBtn.textContent = isMuted ? "🔇 Muted" : "🔊 Sound";
-    });
-    if (sound.getMuted()) soundBtn.textContent = "🔇 Muted";
-
-    // Session validation
     const user = session.requireAuth();
-    if (!user) {
-      window.location.href = "index.html";
-    }
+    if (!user) { window.location.href = "index.html"; }
 
-    async function loadRoleReveal() {
-      // Re-fetch latest role from team doc in case of updates
+    // Sync latest role from Firestore
+    async function initReveal() {
       let role = user.role;
+      let teamSize = user.teamSize || 4;
+
       try {
         const team = await firebaseService.getTeam(user.teamId);
         if (team && team.players) {
-          const currentProfile = team.players.find(p => p.playerId === user.playerId);
-          if (currentProfile) {
-            role = currentProfile.role;
+          const me = team.players.find(p => p.playerId === user.playerId);
+          if (me) {
+            role = me.role;
             user.role = role;
-            user.teamSize = team.size;
+            user.teamSize = team.maxSize || team.size;
+            teamSize = user.teamSize;
             session.set(user);
           }
         }
-      } catch (e) {
-        console.warn("Could not sync latest team doc, using session role.");
-      }
+      } catch (e) { console.warn("Could not sync role:", e); }
 
-      const roleContainer = document.getElementById("role-container");
-      const avatarFrame = document.getElementById("role-avatar-frame");
-      const iconEl = document.getElementById("role-icon");
-      const titleEl = document.getElementById("role-title");
-      const descEl = document.getElementById("role-description");
-      const impostorBriefing = document.getElementById("impostor-briefing");
-      const proceedBtn = document.getElementById("btn-proceed-map");
-
-      // 1. TEAMS OF 2 PLAYERS: ROGUE AI
-      if (user.teamSize === 2 || role === "survivor") {
-        titleEl.textContent = "SYSTEM MALFUNCTION: ROGUE AI DETECTED";
-        titleEl.className = "role-badge-banner role-rogue-ai";
-        iconEl.textContent = "⚠️";
-        avatarFrame.style.borderColor = "var(--amongus-yellow)";
-        avatarFrame.style.boxShadow = "0 0 25px rgba(250, 204, 21, 0.4)";
-
-        descEl.innerHTML = `
-          <strong style="color: var(--amongus-yellow);">ATTENTION CREW:</strong><br>
-          This ship's navigation AI has become unstable. As a 2-member recovery duo, you must navigate all 6 PDEU stations.<br><br>
-          <strong>⚠️ The Anomaly:</strong> Random system glitches will strike BOTH of your phones at the same time during the run! When an anomaly strikes, work together to complete the emergency recovery mini-games and restore radar guidance.
-        `;
-        sound.glitch();
-      } 
-      // 2. TEAMS OF 3-4 PLAYERS: HUMAN IMPOSTOR
-      else if (role === "impostor") {
-        roleContainer.classList.add("cyber-card-danger");
-        titleEl.textContent = "YOU ARE THE IMPOSTOR";
-        titleEl.className = "role-badge-banner role-impostor";
-        iconEl.textContent = "😈";
-        avatarFrame.classList.add("is-impostor");
-
-        descEl.innerHTML = `
-          <strong style="color: var(--amongus-red);">YOUR MISSION: SABOTAGE FROM THE SHADOWS.</strong><br>
-          You do <strong>NOT</strong> act in real life. All your sabotage happens <strong>DIRECTLY THROUGH THE WEBSITE ITSELF</strong>, live on your teammates' phones, in real time!<br><br>
-          Your private sabotage panel is hidden only on your device. When you trigger an ability, your teammates' screens will begin lying to them immediately. Maintain your poker face and act innocent!
-        `;
-        impostorBriefing.style.display = "block";
-        sound.roleReveal(true);
-      } 
-      // 3. TEAMS OF 3-4 PLAYERS: CREWMATE
-      else {
-        titleEl.textContent = "YOU ARE A CREWMATE";
-        titleEl.className = "role-badge-banner role-crewmate";
-        iconEl.textContent = "🧑‍🚀";
-        avatarFrame.style.borderColor = "var(--amongus-blue)";
-        avatarFrame.style.boxShadow = "var(--shadow-glow)";
-
-        descEl.innerHTML = `
-          <strong style="color: var(--amongus-blue);">PDEU EXPEDITION TASK FORCE:</strong><br>
-          Navigate all 6 campus checkpoints in sequence and solve the cryptographic station puzzles to reach Gemini Stage.<br><br>
-          <strong>⚠️ DANGER WARNING:</strong> One of your teammates is secretly an <strong>IMPOSTOR</strong> who is tampering with your website screens in real time. Watch who looks down at their phone right before your screens glitch!
-        `;
-        sound.roleReveal(false);
-      }
-
-      proceedBtn.addEventListener("click", () => {
-        sound.click();
-        window.location.href = "map.html";
-      });
+      // Delay for suspense
+      setTimeout(() => {
+        document.getElementById('reveal-suspense').classList.add('hidden');
+        document.getElementById('reveal-content').classList.remove('hidden');
+        renderRole(role, teamSize);
+      }, 2500);
     }
 
-    loadRoleReveal();
+    function renderRole(role, teamSize) {
+      const title = document.getElementById('reveal-title');
+      const subtitle = document.getElementById('reveal-subtitle');
+      const desc = document.getElementById('reveal-desc');
+      const character = document.getElementById('reveal-character');
+      const abilities = document.getElementById('reveal-abilities');
+      const body = document.querySelector('.reveal-bean-body');
+      const visor = document.querySelector('.reveal-bean-visor');
+
+      if (teamSize === 2 || role === 'survivor') {
+        // ROGUE AI MODE
+        title.textContent = "⚠ ROGUE AI DETECTED";
+        title.style.color = '#f5f557';
+        subtitle.textContent = "THE SHIP'S AI IS UNSTABLE";
+        body.style.fill = '#f5f557';
+        visor.style.fill = '#ffff99';
+        character.style.filter = 'drop-shadow(0 0 30px rgba(245,245,87,0.6))';
+
+        desc.innerHTML = `
+          <p>You are a <strong style="color:#f5f557">2-player recovery duo</strong>.</p>
+          <p style="margin-top:8px">There is no human saboteur — instead, the ship's navigation AI will <strong>randomly glitch</strong> on BOTH your phones simultaneously, 2-3 times during the hunt.</p>
+          <p style="margin-top:8px">When a glitch strikes, work together to complete the emergency recovery challenge within 30 seconds!</p>
+        `;
+
+        sound.glitch();
+        vibrate([200, 100, 200]);
+
+      } else if (role === 'impostor') {
+        // IMPOSTOR
+        title.textContent = "IMPOSTOR";
+        title.style.color = '#c51111';
+        subtitle.textContent = "SABOTAGE FROM THE SHADOWS";
+        body.style.fill = '#c51111';
+        visor.style.fill = '#38fedc';
+        character.style.filter = 'drop-shadow(0 0 40px rgba(197,17,17,0.7))';
+        document.body.style.background = 'radial-gradient(ellipse at center, #2a0a0a 0%, #121326 60%)';
+
+        desc.innerHTML = `
+          <p>You are the <strong style="color:#c51111">IMPOSTOR</strong>. Act normal.</p>
+          <p style="margin-top:8px">Your sabotage is <strong>100% digital</strong> — you don't act in real life. Trigger abilities from your private panel and they hit your teammates' phones <strong>instantly</strong>, live.</p>
+          <p style="margin-top:8px; color:#f5f557">⚠ Keep your screen hidden! If teammates see glitches right after you tap your phone, they'll suspect you.</p>
+        `;
+
+        abilities.classList.remove('hidden');
+        sound.roleReveal(true);
+        vibrate([100, 50, 100, 50, 300]);
+
+      } else {
+        // CREWMATE
+        title.textContent = "CREWMATE";
+        title.style.color = '#38fedc';
+        subtitle.textContent = "PDEU EXPEDITION TASK FORCE";
+        body.style.fill = '#132ed1';
+        visor.style.fill = '#38fedc';
+        character.style.filter = 'drop-shadow(0 0 25px rgba(56,254,220,0.5))';
+
+        desc.innerHTML = `
+          <p>You are a <strong style="color:#38fedc">CREWMATE</strong>.</p>
+          <p style="margin-top:8px">Navigate all 6 campus stations, scan QR codes, and solve puzzles. Watch out — <strong style="color:#c51111">one of your teammates is secretly an IMPOSTOR</strong> who can sabotage your screens in real time!</p>
+          <p style="margin-top:8px">Pay attention to who's looking at their phone right before your screen glitches...</p>
+        `;
+
+        sound.roleReveal(false);
+        vibrate([50, 30, 50]);
+      }
+    }
+
+    window.proceed = function() {
+      sound.click();
+      window.location.href = "map.html";
+    };
+
+    initReveal();
   </script>
 </body>
 </html>

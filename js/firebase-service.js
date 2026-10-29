@@ -1,7 +1,7 @@
 /**
- * Firebase Firestore Service with Multi-tab Demo Fallback
+ * Firebase Firestore Service with Room Code Lobbies & Multi-Tab Fallback
  * Connects to live Firestore when credentials are set,
- * or gracefully runs in local demo mode so testing works immediately.
+ * or runs in local mock mode so testing works immediately.
  */
 
 import { FIREBASE_CONFIG, isDemoConfig, LOCATIONS } from './config.js';
@@ -37,7 +37,6 @@ class FirebaseService {
     this.initMockDB();
   }
 
-  // Ensure DB is initialized before operations
   async ready() {
     await this.initPromise;
   }
@@ -56,14 +55,16 @@ class FirebaseService {
     // Populate pre-configured demo teams if none exist
     if (!localStorage.getItem("pdeu_mock_teams")) {
       const demoTeams = {
-        "TEAM-101": {
-          id: "TEAM-101",
-          pin: "1234",
+        "SKELD1": {
+          id: "SKELD1",
+          hostPlayerId: "P-SKELD1-1001",
           size: 4,
+          maxSize: 4,
+          status: "playing",
           players: [
-            { playerId: "P-101-1", name: "Red", role: "crewmate", joinedAt: Date.now() - 600000 },
-            { playerId: "P-101-2", name: "Cyan", role: "impostor", joinedAt: Date.now() - 550000 },
-            { playerId: "P-101-3", name: "Lime", role: "crewmate", joinedAt: Date.now() - 500000 }
+            { playerId: "P-SKELD1-1001", name: "Red", role: "crewmate", joinedAt: Date.now() - 600000 },
+            { playerId: "P-SKELD1-1002", name: "Cyan", role: "impostor", joinedAt: Date.now() - 550000 },
+            { playerId: "P-SKELD1-1003", name: "Lime", role: "crewmate", joinedAt: Date.now() - 500000 }
           ],
           currentLocationIndex: 1,
           progress: {
@@ -74,6 +75,7 @@ class FirebaseService {
             mapScramble: { active: false, fakeLocationId: null, expiresAt: 0 },
             fakeReject: { active: false }
           },
+          sabotageUsed: {},
           sabotageEvents: [],
           glitchState: { active: false },
           startTime: Date.now() - 600000,
@@ -82,13 +84,15 @@ class FirebaseService {
           impostorScore: 0,
           votes: []
         },
-        "TEAM-202": {
-          id: "TEAM-202",
-          pin: "2222",
+        "ROGUE2": {
+          id: "ROGUE2",
+          hostPlayerId: "P-ROGUE2-2001",
           size: 2,
+          maxSize: 2,
+          status: "playing",
           players: [
-            { playerId: "P-202-1", name: "Alex", role: "survivor", joinedAt: Date.now() - 400000 },
-            { playerId: "P-202-2", name: "Sam", role: "survivor", joinedAt: Date.now() - 350000 }
+            { playerId: "P-ROGUE2-2001", name: "Alex", role: "survivor", joinedAt: Date.now() - 400000 },
+            { playerId: "P-ROGUE2-2002", name: "Sam", role: "survivor", joinedAt: Date.now() - 350000 }
           ],
           currentLocationIndex: 2,
           progress: {
@@ -100,6 +104,7 @@ class FirebaseService {
             mapScramble: { active: false, fakeLocationId: null, expiresAt: 0 },
             fakeReject: { active: false }
           },
+          sabotageUsed: {},
           sabotageEvents: [
             { type: "aiGlitch", triggeredBy: "system", timestamp: Date.now() - 320000, recoveryTimeSeconds: 14 }
           ],
@@ -129,16 +134,92 @@ class FirebaseService {
     });
   }
 
-  // Notify mock listeners within the same tab
   _notifyMockTeam(teamId, teamData) {
     const cb = this.listeners.get(teamId);
     if (cb) cb(teamData);
   }
 
-  // --- TEAM OPERATIONS ---
+  // --- TEAM CREATION & OPERATIONS ---
 
   /**
-   * Get team by ID
+   * Create a new team with room code (Host action)
+   */
+  async createTeam(roomCode, hostPlayer, teamSize = 4) {
+    await this.ready();
+    const cleanId = String(roomCode).trim().toUpperCase();
+
+    const teamData = {
+      id: cleanId,
+      hostPlayerId: hostPlayer.playerId,
+      size: teamSize,
+      maxSize: teamSize,
+      status: "lobby", // 'lobby' -> 'playing' -> 'finished'
+      players: [hostPlayer],
+      currentLocationIndex: 1,
+      progress: {},
+      sabotageState: {
+        puzzleSwap: { active: false, expiresAt: 0 },
+        mapScramble: { active: false, fakeLocationId: null, expiresAt: 0 },
+        fakeReject: { active: false }
+      },
+      sabotageUsed: {},
+      sabotageEvents: [],
+      glitchState: { active: false },
+      startTime: null,
+      finishTime: null,
+      score: 1000,
+      impostorScore: 0,
+      votes: []
+    };
+
+    if (this.isLiveFirebase) {
+      await this.db.collection("teams").doc(cleanId).set(teamData);
+    } else {
+      const teams = JSON.parse(localStorage.getItem("pdeu_mock_teams") || "{}");
+      teams[cleanId] = teamData;
+      localStorage.setItem("pdeu_mock_teams", JSON.stringify(teams));
+      this._notifyMockTeam(cleanId, teamData);
+    }
+
+    return teamData;
+  }
+
+  /**
+   * Start expedition: assign secret roles and set status to "playing"
+   */
+  async startGame(teamId) {
+    await this.ready();
+    const cleanId = String(teamId).trim().toUpperCase();
+    const team = await this.getTeam(cleanId);
+    if (!team) throw new Error("Team not found");
+
+    const players = [...(team.players || [])];
+    const teamSize = team.maxSize || team.size || players.length;
+
+    // Assign roles
+    if (teamSize === 2) {
+      // 2 players: Rogue AI mode, both are survivors
+      players.forEach(p => { p.role = "survivor"; });
+    } else {
+      // 3-4 players: Exactly 1 Impostor, rest Crewmates
+      const impostorIndex = Math.floor(Math.random() * players.length);
+      players.forEach((p, idx) => {
+        p.role = idx === impostorIndex ? "impostor" : "crewmate";
+      });
+    }
+
+    const updates = {
+      status: "playing",
+      players: players,
+      startTime: Date.now()
+    };
+
+    await this.updateTeam(cleanId, updates);
+    return updates;
+  }
+
+  /**
+   * Get team by ID / Room Code
    */
   async getTeam(teamId) {
     await this.ready();
@@ -160,7 +241,6 @@ class FirebaseService {
 
   /**
    * Real-time subscription to team changes (crucial for live sabotage & glitch sync)
-   * Returns an unsubscribe function.
    */
   subscribeTeam(teamId, onUpdate, onError) {
     const cleanId = String(teamId).trim().toUpperCase();
@@ -180,9 +260,7 @@ class FirebaseService {
         }
       );
     } else {
-      // Mock DB subscription
       this.listeners.set(cleanId, onUpdate);
-      // Immediately invoke with current state
       const teams = JSON.parse(localStorage.getItem("pdeu_mock_teams") || "{}");
       if (teams[cleanId]) {
         setTimeout(() => onUpdate(teams[cleanId]), 10);
@@ -245,9 +323,6 @@ class FirebaseService {
 
   // --- ADMIN OPERATIONS ---
 
-  /**
-   * Fetch all teams (with real-time subscription for admin live table)
-   */
   subscribeAllTeams(onUpdate, onError) {
     if (this.isLiveFirebase) {
       return this.db.collection("teams").onSnapshot(
@@ -275,9 +350,6 @@ class FirebaseService {
     }
   }
 
-  /**
-   * Pre-generate multiple teams in batch (Admin tool)
-   */
   async batchCreateTeams(teamsList) {
     await this.ready();
     if (this.isLiveFirebase) {
@@ -296,9 +368,6 @@ class FirebaseService {
     }
   }
 
-  /**
-   * Get location data from Firestore (or fallback to LOCATIONS config)
-   */
   async getLocations() {
     await this.ready();
     if (this.isLiveFirebase) {
@@ -314,13 +383,9 @@ class FirebaseService {
         console.warn("Could not fetch locations from Firestore, using config defaults:", e);
       }
     }
-    // Fallback to config.js defaults
     return LOCATIONS;
   }
 
-  /**
-   * Save or update a location in Firestore (Admin tool)
-   */
   async saveLocation(locationData) {
     await this.ready();
     if (this.isLiveFirebase) {

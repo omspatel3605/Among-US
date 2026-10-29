@@ -2,8 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Among Us: PDEU Campus Treasure Hunt</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#121326">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Among Us: PDEU Campus Hunt</title>
   
   <link rel="stylesheet" href="css/style.css">
   
@@ -13,262 +16,480 @@
 </head>
 <body>
 
-  <!-- App Header -->
-  <header class="app-header">
-    <div class="header-brand">
-      <span class="brand-icon">🚀</span>
-      <h1 class="brand-title">PDEU AMONG US</h1>
-    </div>
-    <div class="header-actions">
-      <button id="btn-toggle-daylight" class="icon-btn" title="Toggle Outdoor Daylight Mode">☀️ Contrast</button>
-      <button id="btn-toggle-sound" class="icon-btn" title="Toggle Audio">🔊 Sound</button>
-    </div>
-  </header>
-
-  <!-- Main Login Screen -->
-  <main class="main-content">
-    <div class="cyber-card" style="text-align: center; margin-top: 10px;">
-      <!-- Among Us Crewmate Silhouette Animation -->
-      <div style="font-size: 64px; margin-bottom: 8px; animation: pulse-danger 2s infinite;">
-        🛸
+  <!-- ======= SCREEN 1: LANDING / MAIN MENU ======= -->
+  <div id="screen-landing" class="screen active">
+    <div class="landing-wrapper">
+      <!-- Floating Among Us Character -->
+      <div class="landing-hero">
+        <svg class="hero-bean" viewBox="0 0 120 160" width="120" height="160">
+          <!-- Backpack -->
+          <rect x="6" y="50" width="22" height="60" rx="10" fill="#0a2140" stroke="#38fedc" stroke-width="3"/>
+          <!-- Body -->
+          <path d="M 30 28 C 30 10, 100 10, 100 28 L 100 115 C 100 135, 88 145, 78 148 L 72 148 C 64 148, 62 135, 62 125 L 62 125 C 62 135, 56 148, 48 148 L 42 148 C 32 148, 30 130, 30 115 Z"
+                fill="#c51111" stroke="#eaeaea" stroke-width="3.5"/>
+          <!-- Visor -->
+          <ellipse cx="78" cy="55" rx="22" ry="16" fill="#38fedc" stroke="#eaeaea" stroke-width="3"/>
+          <ellipse cx="84" cy="49" rx="10" ry="6" fill="#ffffff" opacity="0.5"/>
+        </svg>
       </div>
-      <h2 class="card-title" style="justify-content: center; font-size: 26px;">
-        CAMPUS TREASURE HUNT
-      </h2>
-      <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 24px;">
-        Welcome Crewmate. Enter your physical registration credentials to board the PDEU Skeld expedition.
-      </p>
 
-      <form id="login-form">
-        <div class="form-group" style="text-align: left;">
-          <label class="form-label" for="player-name">Player Name / Codename</label>
-          <input 
-            type="text" 
-            id="player-name" 
-            class="cyber-input" 
-            placeholder="e.g. Red, Priya, Kabir" 
-            required 
-            maxlength="20"
-            autocomplete="nickname"
-          >
-        </div>
+      <h1 class="landing-title">AMONG US</h1>
+      <p class="landing-subtitle">PDEU CAMPUS TREASURE HUNT</p>
 
-        <div class="form-group" style="text-align: left;">
-          <label class="form-label" for="team-id">Team ID</label>
-          <input 
-            type="text" 
-            id="team-id" 
-            class="cyber-input mono" 
-            placeholder="e.g. TEAM-101" 
-            required 
-            style="text-transform: uppercase;"
-            autocomplete="off"
-          >
-          <span style="font-size: 11px; color: var(--text-dim); margin-top: 4px; display: block;">
-            Issued by organizers at check-in desk
-          </span>
-        </div>
-
-        <div class="form-group" style="text-align: left;">
-          <label class="form-label" for="team-pin">4-Digit Team PIN</label>
-          <input 
-            type="password" 
-            id="team-pin" 
-            class="cyber-input mono" 
-            placeholder="••••" 
-            required 
-            maxlength="6" 
-            inputmode="numeric"
-            autocomplete="current-password"
-          >
-        </div>
-
-        <button type="submit" id="btn-login-submit" class="btn-primary">
-          <span>BOARD SPACESHIP</span>
-          <span>➔</span>
+      <!-- Main Menu Buttons (Among Us Style) -->
+      <div class="landing-menu">
+        <button id="btn-create-crew" class="btn-menu btn-menu-cyan" onclick="showScreen('screen-create')">
+          <span class="btn-menu-icon">🚀</span>
+          <span>CREATE CREW</span>
         </button>
-      </form>
 
-      <!-- Quick Demo Access (Helpful for reviewers & offline demo testing) -->
-      <div style="margin-top: 28px; padding-top: 18px; border-top: 1px dashed var(--border-subtle);">
-        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">
-          ⚡ Quick Demo Pre-fills (Instant Testing):
-        </p>
-        <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
-          <button type="button" class="btn-secondary" style="font-size: 12px; padding: 6px 12px;" onclick="quickFill('TEAM-101', '1234', 'Cyan (Impostor)')">
-            Team 101 (4p - Impostor)
-          </button>
-          <button type="button" class="btn-secondary" style="font-size: 12px; padding: 6px 12px;" onclick="quickFill('TEAM-101', '1234', 'Red (Crewmate)')">
-            Team 101 (4p - Crewmate)
-          </button>
-          <button type="button" class="btn-secondary" style="font-size: 12px; padding: 6px 12px;" onclick="quickFill('TEAM-202', '2222', 'Sam (Rogue AI)')">
-            Team 202 (2p - Rogue AI)
-          </button>
+        <button id="btn-join-crew" class="btn-menu btn-menu-white" onclick="showScreen('screen-join')">
+          <span class="btn-menu-icon">🔗</span>
+          <span>JOIN CREW</span>
+        </button>
+
+        <button id="btn-rejoin" class="btn-menu btn-menu-green hidden" onclick="rejoinGame()">
+          <span class="btn-menu-icon">▶️</span>
+          <span>CONTINUE GAME</span>
+        </button>
+      </div>
+
+      <div class="landing-footer">
+        <a href="admin.html" class="link-admin">⚙️ Organizer Dashboard</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======= SCREEN 2: CREATE CREW ======= -->
+  <div id="screen-create" class="screen">
+    <header class="app-header">
+      <button class="btn-back" onclick="showScreen('screen-landing')">← Back</button>
+      <h2 class="header-title">CREATE CREW</h2>
+      <div style="width:48px"></div>
+    </header>
+
+    <div class="screen-body">
+      <div class="card">
+        <div class="form-group">
+          <label class="form-label">YOUR NAME</label>
+          <input type="text" id="create-name" class="input" placeholder="Enter your name..." maxlength="16" autocomplete="nickname" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">CREW SIZE</label>
+          <div class="size-selector">
+            <button class="size-btn" data-size="2" onclick="selectSize(this)">
+              <span class="size-num">2</span>
+              <span class="size-label">Rogue AI</span>
+            </button>
+            <button class="size-btn" data-size="3" onclick="selectSize(this)">
+              <span class="size-num">3</span>
+              <span class="size-label">1 Impostor</span>
+            </button>
+            <button class="size-btn active" data-size="4" onclick="selectSize(this)">
+              <span class="size-num">4</span>
+              <span class="size-label">1 Impostor</span>
+            </button>
+          </div>
+          <p class="form-hint">
+            <span id="size-explanation">Teams of 3-4 have a secret Impostor who sabotages digitally. Teams of 2 face a Rogue AI.</span>
+          </p>
+        </div>
+
+        <button id="btn-do-create" class="btn-primary" onclick="doCreateCrew()">
+          CREATE & GET ROOM CODE
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======= SCREEN 3: JOIN CREW ======= -->
+  <div id="screen-join" class="screen">
+    <header class="app-header">
+      <button class="btn-back" onclick="showScreen('screen-landing')">← Back</button>
+      <h2 class="header-title">JOIN CREW</h2>
+      <div style="width:48px"></div>
+    </header>
+
+    <div class="screen-body">
+      <div class="card">
+        <div class="form-group">
+          <label class="form-label">YOUR NAME</label>
+          <input type="text" id="join-name" class="input" placeholder="Enter your name..." maxlength="16" autocomplete="nickname" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">ROOM CODE</label>
+          <input type="text" id="join-code" class="input input-code" placeholder="ABCDEF" maxlength="6" autocomplete="off" style="text-transform:uppercase; letter-spacing:6px; text-align:center; font-size:24px;">
+          <p class="form-hint">Ask the crew host for their 6-letter code</p>
+        </div>
+
+        <button id="btn-do-join" class="btn-primary" onclick="doJoinCrew()">
+          JOIN CREW
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======= SCREEN 4: LOBBY (After create/join) ======= -->
+  <div id="screen-lobby" class="screen">
+    <header class="app-header">
+      <button class="btn-back" onclick="leaveLobby()">← Leave</button>
+      <h2 class="header-title">CREW LOBBY</h2>
+      <button id="btn-sound-toggle" class="btn-icon" onclick="toggleSound()" title="Toggle Sound">🔊</button>
+    </header>
+
+    <div class="screen-body">
+      <!-- Room Code Display -->
+      <div class="card text-center">
+        <p class="form-label" style="margin-bottom:4px;">SHARE THIS CODE WITH YOUR CREW</p>
+        <div class="room-code-display" id="lobby-room-code">------</div>
+        <button class="btn-ghost btn-sm" onclick="copyRoomCode()" style="margin-top:8px;">📋 Copy Code</button>
+      </div>
+
+      <!-- Player Slots -->
+      <div class="card">
+        <h3 class="card-heading">CREW MEMBERS</h3>
+        <div id="lobby-player-list" class="player-list">
+          <!-- Rendered dynamically -->
         </div>
       </div>
 
-      <div style="margin-top: 20px; font-size: 12px;">
-        <a href="admin.html" style="color: var(--amongus-blue); text-decoration: none;">
-          🔐 Organizer / Admin Dashboard
-        </a>
+      <!-- Host Start Button -->
+      <div id="host-controls" class="hidden">
+        <button id="btn-start-game" class="btn-primary btn-danger" onclick="doStartGame()" disabled>
+          🚀 START EXPEDITION
+        </button>
+        <p class="form-hint text-center" id="start-hint">Need at least 2 players to start</p>
+      </div>
+
+      <!-- Non-host waiting message -->
+      <div id="guest-waiting" class="card text-center hidden">
+        <div class="waiting-dots">
+          <span>●</span><span>●</span><span>●</span>
+        </div>
+        <p style="color:var(--muted);">Waiting for host to start the expedition...</p>
       </div>
     </div>
-  </main>
+  </div>
 
   <script type="module">
     import { firebaseService } from './js/firebase-service.js';
-    import { session, displayMode, showToast, generatePlayerId } from './js/app.js';
+    import { session, displayMode, showToast, generatePlayerId, vibrate } from './js/app.js';
     import { sound } from './js/sound.js';
+    import { generateRoomCode } from './js/config.js';
 
-    // Daylight Mode Toggle
-    document.getElementById("btn-toggle-daylight").addEventListener("click", () => {
-      const isDay = displayMode.toggle();
-      showToast(isDay ? "High-Contrast Daylight Mode ON" : "Night Sci-Fi Mode ON", "info");
-    });
+    // Apply display mode
+    displayMode.apply();
 
-    // Sound Toggle
-    const soundBtn = document.getElementById("btn-toggle-sound");
-    soundBtn.addEventListener("click", () => {
-      const isMuted = sound.toggleMute();
-      soundBtn.textContent = isMuted ? "🔇 Muted" : "🔊 Sound";
-      showToast(isMuted ? "Audio muted" : "Audio enabled", "info");
-    });
-    if (sound.getMuted()) soundBtn.textContent = "🔇 Muted";
+    // Expose functions to inline handlers
+    let selectedSize = 4;
+    let currentTeamId = null;
+    let unsubscribe = null;
 
-    // Auto-fill from localStorage if previously registered
-    const existingSession = session.get();
-    if (existingSession) {
-      document.getElementById("player-name").value = existingSession.playerName || "";
-      document.getElementById("team-id").value = existingSession.teamId || "";
+    // Check for existing session → show Continue button
+    const existing = session.get();
+    if (existing && existing.teamId && existing.playerId) {
+      document.getElementById('btn-rejoin').classList.remove('hidden');
     }
 
-    // Quick-Fill Helper for Demo
-    window.quickFill = (teamId, pin, playerName) => {
-      document.getElementById("team-id").value = teamId;
-      document.getElementById("team-pin").value = pin;
-      document.getElementById("player-name").value = playerName;
+    // Screen navigation
+    window.showScreen = function(screenId) {
       sound.click();
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(screenId).classList.add('active');
     };
 
-    // Form Submit Handler
-    const form = document.getElementById("login-form");
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
+    // Size selector
+    window.selectSize = function(btn) {
       sound.click();
-
-      const name = document.getElementById("player-name").value.trim();
-      const teamId = document.getElementById("team-id").value.trim().toUpperCase();
-      const pin = document.getElementById("team-pin").value.trim();
-      const submitBtn = document.getElementById("btn-login-submit");
-
-      if (!name || !teamId || !pin) {
-        showToast("Please fill all fields", "error");
-        return;
+      document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedSize = parseInt(btn.dataset.size, 10);
+      const exp = document.getElementById('size-explanation');
+      if (selectedSize === 2) {
+        exp.textContent = "Both players face random AI glitches together. No human saboteur.";
+      } else {
+        exp.textContent = `One of the ${selectedSize} players is secretly the Impostor with digital sabotage powers.`;
       }
+    };
 
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = "<span>VERIFYING REGISTRATION...</span>";
+    // CREATE CREW
+    window.doCreateCrew = async function() {
+      const name = document.getElementById('create-name').value.trim();
+      if (!name) { showToast("Enter your name!", "error"); return; }
+
+      const btn = document.getElementById('btn-do-create');
+      btn.disabled = true;
+      btn.textContent = "CREATING...";
 
       try {
-        const team = await firebaseService.getTeam(teamId);
+        const roomCode = generateRoomCode();
+        const playerId = generatePlayerId(roomCode);
 
+        const hostPlayer = {
+          playerId,
+          name,
+          role: null,
+          joinedAt: Date.now()
+        };
+
+        await firebaseService.createTeam(roomCode, hostPlayer, selectedSize);
+
+        session.set({
+          teamId: roomCode,
+          playerName: name,
+          playerId,
+          role: null,
+          teamSize: selectedSize,
+          isHost: true
+        });
+
+        sound.success();
+        vibrate([50, 30, 50]);
+        currentTeamId = roomCode;
+        enterLobby(roomCode, true);
+      } catch (err) {
+        showToast("Error: " + err.message, "error");
+        btn.disabled = false;
+        btn.textContent = "CREATE & GET ROOM CODE";
+      }
+    };
+
+    // JOIN CREW
+    window.doJoinCrew = async function() {
+      const name = document.getElementById('join-name').value.trim();
+      const code = document.getElementById('join-code').value.trim().toUpperCase();
+
+      if (!name) { showToast("Enter your name!", "error"); return; }
+      if (!code || code.length < 4) { showToast("Enter the room code!", "error"); return; }
+
+      const btn = document.getElementById('btn-do-join');
+      btn.disabled = true;
+      btn.textContent = "JOINING...";
+
+      try {
+        const team = await firebaseService.getTeam(code);
         if (!team) {
-          showToast(`Team '${teamId}' not found. Please verify with organizers.`, "error");
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = "<span>BOARD SPACESHIP</span><span>➔</span>";
+          showToast(`Room "${code}" not found. Check the code!`, "error");
+          btn.disabled = false;
+          btn.textContent = "JOIN CREW";
           return;
         }
 
-        if (String(team.pin).trim() !== String(pin).trim()) {
-          showToast("Incorrect 4-digit Team PIN", "error");
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = "<span>BOARD SPACESHIP</span><span>➔</span>";
-          return;
-        }
-
+        // Check if this player name already exists
         const players = team.players || [];
         const existingPlayer = players.find(p => p.name.toLowerCase() === name.toLowerCase());
 
-        let playerProfile = null;
+        let playerProfile;
 
         if (existingPlayer) {
-          // Returning player
           playerProfile = existingPlayer;
         } else {
-          // New player joining
-          const teamSize = team.size || 4;
-
-          if (players.length >= teamSize) {
-            showToast(`Team '${teamId}' is already full (${teamSize} players maximum).`, "error");
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = "<span>BOARD SPACESHIP</span><span>➔</span>";
+          // Check if full
+          const maxSize = team.maxSize || team.size || 4;
+          if (players.length >= maxSize) {
+            showToast("Crew is full! Max " + maxSize + " players.", "error");
+            btn.disabled = false;
+            btn.textContent = "JOIN CREW";
             return;
           }
 
-          // Determine role
-          let role = "crewmate";
-          if (teamSize === 2) {
-            role = "survivor"; // 2-player rogue AI mode
-          } else {
-            // For 3-4 player teams: ensure exactly one impostor
-            const hasImpostor = players.some(p => p.role === "impostor");
-            const isLastSlot = players.length === teamSize - 1;
-
-            if (!hasImpostor && (isLastSlot || Math.random() < 0.35)) {
-              role = "impostor";
-            } else {
-              role = "crewmate";
-            }
+          // Check if game already started
+          if (team.status === "playing") {
+            showToast("Game already in progress! Can't join mid-game.", "error");
+            btn.disabled = false;
+            btn.textContent = "JOIN CREW";
+            return;
           }
 
-          const newPlayerId = generatePlayerId(teamId);
+          const playerId = generatePlayerId(code);
           playerProfile = {
-            playerId: newPlayerId,
-            name: name,
-            role: role,
+            playerId,
+            name,
+            role: null,
             joinedAt: Date.now()
           };
 
           players.push(playerProfile);
-
-          // Update team in Firestore
-          await firebaseService.updateTeam(teamId, {
-            players: players,
-            startTime: team.startTime || Date.now()
-          });
+          await firebaseService.updateTeam(code, { players });
         }
 
-        // Save session locally
         session.set({
-          teamId: teamId,
+          teamId: code,
           playerName: playerProfile.name,
           playerId: playerProfile.playerId,
           role: playerProfile.role,
-          teamSize: team.size || 4
+          teamSize: team.maxSize || team.size || 4,
+          isHost: team.hostPlayerId === playerProfile.playerId
         });
 
         sound.success();
-        showToast(`Welcome aboard, ${playerProfile.name}!`, "success");
+        vibrate([50, 30, 50]);
+        currentTeamId = code;
+        enterLobby(code, team.hostPlayerId === playerProfile.playerId);
 
-        // Check if there was a returnUrl (e.g. from scanning a QR code while logged out)
-        const urlParams = new URLSearchParams(window.location.search);
-        const returnUrl = urlParams.get("returnUrl");
+        // If game was already started (rejoining), go to role
+        if (team.status === "playing" && playerProfile.role) {
+          window.location.href = "role.html";
+        }
+      } catch (err) {
+        showToast("Error: " + err.message, "error");
+        btn.disabled = false;
+        btn.textContent = "JOIN CREW";
+      }
+    };
 
-        setTimeout(() => {
-          if (returnUrl) {
-            window.location.href = decodeURIComponent(returnUrl);
-          } else {
+    // REJOIN existing game
+    window.rejoinGame = function() {
+      const sess = session.get();
+      if (!sess) return;
+      sound.click();
+      
+      if (sess.role) {
+        // Already have a role, go to map
+        window.location.href = "map.html";
+      } else {
+        // Still in lobby phase
+        currentTeamId = sess.teamId;
+        enterLobby(sess.teamId, sess.isHost);
+      }
+    };
+
+    // ENTER LOBBY
+    function enterLobby(teamId, isHost) {
+      showScreen('screen-lobby');
+      document.getElementById('lobby-room-code').textContent = teamId;
+
+      if (isHost) {
+        document.getElementById('host-controls').classList.remove('hidden');
+        document.getElementById('guest-waiting').classList.add('hidden');
+      } else {
+        document.getElementById('host-controls').classList.add('hidden');
+        document.getElementById('guest-waiting').classList.remove('hidden');
+      }
+
+      // Subscribe to live team updates
+      if (unsubscribe) unsubscribe();
+      unsubscribe = firebaseService.subscribeTeam(teamId, (team) => {
+        if (!team) return;
+        renderLobbyPlayers(team, isHost);
+
+        // If the game was started by host, redirect all players
+        if (team.status === "playing") {
+          const myPlayer = (team.players || []).find(p => p.playerId === session.get()?.playerId);
+          if (myPlayer && myPlayer.role) {
+            const sess = session.get();
+            sess.role = myPlayer.role;
+            sess.teamSize = team.maxSize || team.size;
+            session.set(sess);
             window.location.href = "role.html";
           }
-        }, 600);
+        }
+      });
+    }
 
-      } catch (err) {
-        console.error(err);
-        showToast("Error connecting to server: " + err.message, "error");
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = "<span>BOARD SPACESHIP</span><span>➔</span>";
+    // Render lobby player list
+    const AU_COLORS = ['#c51111','#132ed1','#117f2d','#ed54ba','#ef7d0e','#f5f558','#3f474e','#d6e0f0','#6b2fbc','#71491e','#38fedc','#50ef39'];
+
+    function renderLobbyPlayers(team, isHost) {
+      const list = document.getElementById('lobby-player-list');
+      const players = team.players || [];
+      const maxSize = team.maxSize || team.size || 4;
+
+      list.innerHTML = '';
+      for (let i = 0; i < maxSize; i++) {
+        const player = players[i];
+        const slot = document.createElement('div');
+        
+        if (player) {
+          const color = AU_COLORS[i % AU_COLORS.length];
+          const isMe = player.playerId === session.get()?.playerId;
+          slot.className = 'lobby-slot lobby-slot-filled';
+          slot.innerHTML = `
+            <div class="slot-color" style="background:${color}"></div>
+            <div class="slot-info">
+              <span class="slot-name">${player.name}${isMe ? ' (You)' : ''}</span>
+              <span class="slot-id">${player.playerId?.slice(-4) || ''}</span>
+            </div>
+            ${player.playerId === team.hostPlayerId ? '<span class="slot-host-badge">HOST</span>' : ''}
+          `;
+        } else {
+          slot.className = 'lobby-slot lobby-slot-empty';
+          slot.innerHTML = `
+            <div class="slot-color slot-color-empty"></div>
+            <div class="slot-info">
+              <span class="slot-name" style="color:var(--dim)">Waiting for player...</span>
+            </div>
+          `;
+        }
+        list.appendChild(slot);
       }
-    });
+
+      // Update start button state
+      const startBtn = document.getElementById('btn-start-game');
+      const hint = document.getElementById('start-hint');
+      if (players.length >= 2) {
+        startBtn.disabled = false;
+        hint.textContent = `${players.length}/${maxSize} players ready. You can start now!`;
+      } else {
+        startBtn.disabled = true;
+        hint.textContent = `Need at least 2 players (${players.length}/${maxSize} joined)`;
+      }
+    }
+
+    // START GAME (Host only)
+    window.doStartGame = async function() {
+      const sess = session.get();
+      if (!sess || !sess.isHost) return;
+
+      const btn = document.getElementById('btn-start-game');
+      btn.disabled = true;
+      btn.textContent = "ASSIGNING ROLES...";
+
+      try {
+        await firebaseService.startGame(sess.teamId);
+        sound.sabotageAlarm();
+        vibrate([100, 50, 100, 50, 200]);
+        // The subscribeTeam listener will detect status change and redirect
+      } catch (err) {
+        showToast("Error starting: " + err.message, "error");
+        btn.disabled = false;
+        btn.textContent = "🚀 START EXPEDITION";
+      }
+    };
+
+    // LEAVE LOBBY
+    window.leaveLobby = function() {
+      if (unsubscribe) unsubscribe();
+      // Don't clear session - they can rejoin
+      showScreen('screen-landing');
+    };
+
+    // COPY ROOM CODE
+    window.copyRoomCode = function() {
+      const code = document.getElementById('lobby-room-code').textContent;
+      navigator.clipboard?.writeText(code);
+      showToast("Code copied: " + code, "success");
+      vibrate([30]);
+    };
+
+    // SOUND TOGGLE
+    window.toggleSound = function() {
+      const isMuted = sound.toggleMute();
+      document.getElementById('btn-sound-toggle').textContent = isMuted ? '🔇' : '🔊';
+    };
+    if (sound.getMuted()) {
+      const sb = document.getElementById('btn-sound-toggle');
+      if (sb) sb.textContent = '🔇';
+    }
+
+    // Handle return URL (from QR scan while logged out)
+    const urlParams = new URLSearchParams(window.location.search);
+    const returnUrl = urlParams.get('returnUrl');
+    if (returnUrl && existing && existing.teamId) {
+      window.location.href = decodeURIComponent(returnUrl);
+    }
   </script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 /**
- * Among Us Campus Radar & Map Styles
+ * Mobile-First Among Us Campus Radar & Map Styles
  */
 
 .map-page-body {
@@ -7,15 +7,17 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: fixed;
+  inset: 0;
 }
 
-.map-viewport {
+#map-container, .map-viewport {
   flex: 1;
   position: relative;
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: #070a13;
+  background: #090a14;
   cursor: grab;
   user-select: none;
   touch-action: none;
@@ -27,8 +29,8 @@
   left: 0;
   width: 100%;
   height: 100%;
-  min-width: 1000px;
-  min-height: 750px;
+  min-width: 900px;
+  min-height: 680px;
   transform-origin: center center;
   transition: transform 0.08s ease-out;
 }
@@ -36,12 +38,12 @@
 .map-background-img {
   width: 100%;
   height: 100%;
-  object-fit: fill;
+  object-fit: contain;
   display: block;
   pointer-events: none;
 }
 
-/* SVG Walking Path Layer */
+/* SVG Walking Paths */
 .map-paths-svg {
   position: absolute;
   inset: 0;
@@ -52,27 +54,19 @@
 }
 
 .path-line {
-  stroke-width: 2.5;
-  stroke-dasharray: 6 6;
+  stroke-width: 3;
   stroke-linecap: round;
 }
 
 .path-cleared {
-  stroke: #22c55e;
-  stroke-dasharray: none;
-  stroke-width: 3;
-  filter: drop-shadow(0 0 6px rgba(34, 197, 94, 0.7));
+  stroke: var(--green-light);
+  filter: drop-shadow(0 0 6px rgba(80, 239, 57, 0.8));
 }
 
 .path-pending {
-  stroke: #64748b;
-  opacity: 0.6;
-  animation: dash-flow 25s linear infinite;
-}
-
-@keyframes dash-flow {
-  from { stroke-dashoffset: 200; }
-  to { stroke-dashoffset: 0; }
+  stroke: var(--dim);
+  stroke-dasharray: 6 6;
+  opacity: 0.7;
 }
 
 /* Pins Layer */
@@ -85,7 +79,7 @@
   z-index: 20;
 }
 
-/* Bean-Shaped Among Us Pin Marker */
+/* Among Us Bean Pin Marker (Enlarged for Mobile) */
 .amongus-pin {
   position: absolute;
   transform: translate(-50%, -100%);
@@ -94,19 +88,14 @@
   align-items: center;
   pointer-events: auto;
   cursor: pointer;
-  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.amongus-pin:hover {
-  transform: translate(-50%, -108%) scale(1.1);
-  z-index: 50;
+  touch-action: manipulation;
 }
 
 .pin-marker {
   position: relative;
-  width: 44px;
-  height: 52px;
-  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.7));
+  width: 48px;
+  height: 56px;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.8));
 }
 
 .bean-svg {
@@ -119,85 +108,57 @@
   top: -4px;
   right: -4px;
   background: #ffffff;
-  color: #0f172a;
-  font-family: var(--font-heading);
-  font-weight: 800;
+  color: #0c0d1a;
+  font-family: var(--font-display);
   font-size: 11px;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+  border: 1.5px solid #000;
 }
 
 /* Pin States */
-/* 1. Completed Pin */
-.pin-completed .bean-body {
-  fill: #22c55e;
-}
-.pin-completed .bean-visor {
-  fill: #a7f3d0;
-}
-.pin-completed .pin-order-badge {
-  background: #22c55e;
-  color: #ffffff;
-}
+.pin-completed .bean-body { fill: var(--green); }
+.pin-completed .bean-visor { fill: var(--green-light); }
+.pin-completed .pin-order-badge { background: var(--green-light); color: #000; }
 
-/* 2. Active Next Pin (Pulsing Target) */
 .pin-active .bean-body {
-  fill: #38bdf8;
+  fill: var(--cyan);
   animation: pulse-bean 1.6s infinite alternate;
 }
-.pin-active .bean-visor {
-  fill: #bae6fd;
-}
-.pin-active .pin-order-badge {
-  background: #facc15;
-  color: #0f172a;
-}
-.pin-active .pin-beacon {
-  display: block;
-}
+.pin-active .bean-visor { fill: #ffffff; }
+.pin-active .pin-order-badge { background: var(--yellow); color: #000; }
+.pin-active .pin-beacon { display: block; }
 
-/* 3. Locked / Future Pin */
 .pin-locked {
-  opacity: 0.45;
-  filter: grayscale(0.85);
+  opacity: 0.35;
+  filter: grayscale(0.9);
 }
-.pin-locked .bean-body {
-  fill: #475569;
-}
-.pin-locked .bean-visor {
-  fill: #94a3b8;
-}
+.pin-locked .bean-body { fill: var(--dim); }
+.pin-locked .bean-visor { fill: var(--muted); }
 
-/* 4. Scrambled Decoy Pin (Map Scramble Sabotage) */
 .pin-scrambled {
   animation: scramble-jitter 0.25s infinite;
 }
-.pin-scrambled .bean-body {
-  fill: #f97316;
-}
-.pin-scrambled .bean-visor {
-  fill: #fde047;
-}
+.pin-scrambled .bean-body { fill: var(--orange); }
+.pin-scrambled .bean-visor { fill: var(--yellow); }
 .pin-scrambled .pin-beacon {
   display: block;
-  border-color: #f97316;
-  background: rgba(249, 115, 22, 0.25);
+  border-color: var(--orange);
 }
 
-/* Pulsing Radar Beacon Ring */
 .pin-beacon {
   display: none;
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 70px;
-  height: 70px;
-  border: 2px solid #38bdf8;
+  width: 74px;
+  height: 74px;
+  border: 2px solid var(--cyan);
   border-radius: 50%;
   transform: translate(-50%, -50%);
   animation: radar-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
@@ -206,13 +167,13 @@
 }
 
 @keyframes radar-ping {
-  0% { transform: translate(-50%, -50%) scale(0.4); opacity: 1; }
-  100% { transform: translate(-50%, -50%) scale(1.7); opacity: 0; }
+  0% { transform: translate(-50%, -50%) scale(0.3); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; }
 }
 
 @keyframes pulse-bean {
-  0% { filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.6)); }
-  100% { filter: drop-shadow(0 0 18px rgba(56, 189, 248, 1)); }
+  0% { filter: drop-shadow(0 0 6px rgba(56, 254, 220, 0.6)); }
+  100% { filter: drop-shadow(0 0 20px rgba(56, 254, 220, 1)); }
 }
 
 @keyframes scramble-jitter {
@@ -221,38 +182,35 @@
   75% { transform: translate(-48%, -101%) rotate(2deg); }
 }
 
-/* Pin Label Card */
 .pin-card {
-  margin-top: 4px;
-  background: rgba(15, 23, 42, 0.92);
-  border: 1px solid var(--border-subtle);
+  margin-top: 3px;
+  background: rgba(14, 16, 33, 0.94);
+  border: 2px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 4px 8px;
+  padding: 3px 8px;
   text-align: center;
   white-space: nowrap;
   backdrop-filter: blur(6px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 .pin-name {
-  font-family: var(--font-heading);
+  font-family: var(--font-display);
   font-size: 11px;
-  font-weight: 700;
-  color: #f8fafc;
+  color: var(--white);
 }
 
 .pin-status-text {
   font-family: var(--font-mono);
   font-size: 9px;
-  color: var(--amongus-blue);
+  color: var(--cyan);
   letter-spacing: 0.5px;
 }
 
-/* Floating Pan-Zoom Controls */
+/* FLOATING PAN-ZOOM CONTROLS (Right Edge) */
 .map-floating-controls {
   position: absolute;
-  right: 18px;
-  bottom: 90px;
+  right: 14px;
+  bottom: 96px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -260,69 +218,82 @@
 }
 
 .map-ctrl-btn {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: rgba(15, 23, 42, 0.88);
-  border: 1px solid var(--border-subtle);
-  color: #f8fafc;
-  font-size: 20px;
+  width: 46px;
+  height: 46px;
+  border-radius: var(--radius-sm);
+  background: rgba(22, 24, 46, 0.92);
+  border: 2px solid var(--border);
+  color: var(--white);
+  font-family: var(--font-display);
+  font-size: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(6px);
-  transition: all 0.2s;
 }
 
-.map-ctrl-btn:hover {
-  background: var(--bg-surface-elevated);
-  border-color: var(--border-focus);
+.map-ctrl-btn:active {
+  background: var(--cyan);
+  color: #000;
 }
 
 .map-ctrl-btn.active {
-  background: #facc15;
-  color: #0f172a;
+  background: var(--yellow);
+  color: #000;
+  border-color: #000;
 }
 
-/* Map HUD Info Header */
-.map-hud-header {
+/* FLOATING HUD CARD (Top Center) */
+.map-hud {
   position: absolute;
-  top: 14px;
-  left: 14px;
-  right: 14px;
-  max-width: 480px;
+  top: 10px;
+  left: 12px;
+  right: 12px;
+  max-width: 440px;
   margin: 0 auto;
-  background: rgba(15, 23, 42, 0.92);
-  border: 2px solid var(--border-subtle);
+  background: rgba(14, 16, 33, 0.94);
+  border: 2px solid var(--border);
   border-radius: var(--radius-md);
-  padding: 12px 16px;
+  padding: 10px 14px;
   z-index: 100;
   backdrop-filter: blur(10px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
 }
 
-.hud-objective-title {
-  font-family: var(--font-heading);
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--amongus-blue);
+.hud-top {
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-bottom: 2px;
 }
 
-.hud-objective-name {
+.hud-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 8px var(--cyan);
+}
+
+.hud-label {
+  font-family: var(--font-display);
+  font-size: 11px;
+  color: var(--cyan);
+  letter-spacing: 0.5px;
+}
+
+.hud-name {
+  font-family: var(--font-display);
   font-size: 16px;
-  font-weight: 700;
   color: #ffffff;
-  margin-top: 2px;
+  line-height: 1.2;
 }
 
 .hud-clue {
   font-size: 12px;
-  color: var(--text-muted);
-  margin-top: 4px;
-  line-height: 1.35;
+  color: var(--muted);
+  margin-top: 3px;
+  line-height: 1.3;
 }
