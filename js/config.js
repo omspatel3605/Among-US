@@ -4,14 +4,14 @@
  */
 
 // Firebase Configuration
-// Replace with your Firebase Project credentials from https://console.firebase.google.com
 export const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDEMO_REPLACE_WITH_YOUR_FIREBASE_API_KEY",
+  apiKey: "AIzaSyACNKAgM-0Zojv9S1aOLYuM1iQVJ4nSRSg",
   authDomain: "pdeu-amongus-hunt.firebaseapp.com",
   projectId: "pdeu-amongus-hunt",
-  storageBucket: "pdeu-amongus-hunt.appspot.com",
-  messagingSenderId: "123456789012",
-  appId: "1:123456789012:web:abcdef1234567890"
+  storageBucket: "pdeu-amongus-hunt.firebasestorage.app",
+  messagingSenderId: "1082067419012",
+  appId: "1:1082067419012:web:8a4e981d08295d4dd9e7d1",
+  measurementId: "G-PP03420Q8T"
 };
 
 // Check if using demo/placeholder config
