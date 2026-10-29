@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Campus Radar — PDEU Among Us</title>
+  
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/map.css">
+  
+  <!-- Firebase Compat CDN -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+</head>
+<body class="map-page-body">
+
+  <!-- App Header -->
+  <header class="app-header">
+    <div class="header-brand">
+      <span class="brand-icon">🗺️</span>
+      <div>
+        <h1 class="brand-title" style="font-size: 17px;">PDEU CAMPUS RADAR</h1>
+        <div id="player-status-tag" style="font-size: 11px; font-family: var(--font-mono); color: var(--text-muted);">
+          Loading...
+        </div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button id="btn-open-scanner" class="icon-btn" title="Open QR Scanner" style="background: #0284c7; color: #fff;">
+        📷 Scan QR
+      </button>
+      <button id="btn-toggle-daylight" class="icon-btn" title="Toggle Outdoor Daylight Mode">☀️</button>
+      <button id="btn-toggle-sound" class="icon-btn" title="Toggle Sound">🔊</button>
+    </div>
+  </header>
+
+  <!-- Among Us Style Task Progress Bar -->
+  <div class="task-progress-bar">
+    <span style="color: var(--amongus-blue); font-family: var(--font-heading); font-size: 12px;">TASKS COMPLETED:</span>
+    <div class="task-progress-track">
+      <div id="progress-bar-fill" class="task-progress-fill"></div>
+    </div>
+    <span id="progress-text" class="mono" style="color: #22c55e; font-size: 12px;">0 / 6</span>
+  </div>
+
+  <!-- Map Viewport -->
+  <div id="map-viewport-container" class="map-viewport">
+
+    <!-- Top Floating HUD Objective Card -->
+    <div class="map-hud-header" id="hud-card">
+      <div class="hud-objective-title">
+        <span id="hud-pulse-dot" style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--amongus-blue); box-shadow:0 0 8px var(--amongus-blue);"></span>
+        <span id="hud-stage-label">CURRENT OBJECTIVE</span>
+      </div>
+      <div id="hud-location-name" class="hud-objective-name">
+        OSAIL Gazebo
+      </div>
+      <div id="hud-location-clue" class="hud-clue">
+        Head south-west towards the Student Activity Centre lawn. Scan the QR code at the physical gazebo.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- In-App Camera QR Scanner Modal (Fallback for convenient in-app scanning) -->
+  <div id="scanner-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:3000; flex-direction:column; align-items:center; justify-content:center; padding:20px;">
+    <div style="width:100%; max-width:400px; background:#0f172a; border:2px solid var(--amongus-blue); border-radius:16px; padding:20px; text-align:center;">
+      <h3 style="margin-bottom:12px; color:var(--amongus-blue);">Scan Station QR Code</h3>
+      <p style="font-size:12px; color:var(--text-muted); margin-bottom:16px;">
+        Use your phone's default camera app to scan the printed QR code, or paste the scan URL below:
+      </p>
+      
+      <input type="text" id="manual-scan-input" class="cyber-input" placeholder="e.g. scan.html?loc=osail-gazebo&token=OG842X1" style="font-size:13px; margin-bottom:12px;">
+      
+      <div style="display:flex; gap:10px;">
+        <button id="btn-submit-manual-scan" class="btn-primary" style="flex:1; padding:10px; font-size:14px;">Open Station</button>
+        <button id="btn-close-scanner" class="btn-secondary" style="padding:10px 16px; font-size:14px;">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { firebaseService } from './js/firebase-service.js';
+    import { session, displayMode, showToast } from './js/app.js';
+    import { sound } from './js/sound.js';
+    import { LOCATIONS } from './js/config.js';
+    import { CampusMapEngine } from './js/map-engine.js';
+    import { sabotageEngine } from './js/sabotage-engine.js';
+    import { rogueAIEngine } from './js/rogue-ai-engine.js';
+
+    // Verify Session
+    const user = session.requireAuth();
+    if (!user) {
+      window.location.href = "index.html";
+    }
+
+    // UI Buttons
+    document.getElementById("btn-toggle-daylight").addEventListener("click", () => {
+      displayMode.toggle();
+    });
+
+    const soundBtn = document.getElementById("btn-toggle-sound");
+    soundBtn.addEventListener("click", () => {
+      const isMuted = sound.toggleMute();
+      soundBtn.textContent = isMuted ? "🔇" : "🔊";
+    });
+    if (sound.getMuted()) soundBtn.textContent = "🔇";
+
+    // Setup User Status Tag
+    const statusTag = document.getElementById("player-status-tag");
+    const roleIcon = user.role === 'impostor' ? '😈 IMPOSTOR' : user.role === 'survivor' ? '⚡ AI SURVIVOR' : '🧑‍🚀 CREWMATE';
+    statusTag.textContent = `${user.teamId} • ${user.playerName} (${roleIcon})`;
+
+    // Initialize Map Engine
+    const container = document.getElementById("map-viewport-container");
+    const mapEngine = new CampusMapEngine(container, {
+      locations: LOCATIONS,
+      calibrationMode: false
+    });
+
+    let currentTeamData = null;
+    let unsubscribe = null;
+
+    // Connect Real-Time Firestore Listener
+    unsubscribe = firebaseService.subscribeTeam(user.teamId, (team) => {
+      if (!team) {
+        showToast("Team record not found!", "error");
+        return;
+      }
+      currentTeamData = team;
+
+      // Update Engines
+      sabotageEngine.init(team, user);
+      sabotageEngine.handleTeamUpdate(team);
+
+      rogueAIEngine.init(team, user);
+      rogueAIEngine.handleTeamUpdate(team);
+
+      // Current Location Index (1 to 6)
+      const currentIndex = team.currentLocationIndex || 1;
+
+      // Check if all 6 stations completed
+      if (currentIndex > LOCATIONS.length || team.finishTime) {
+        window.location.href = "finish.html";
+        return;
+      }
+
+      // Update Task Progress Bar
+      const completedCount = currentIndex - 1;
+      const pct = Math.round((completedCount / LOCATIONS.length) * 100);
+      document.getElementById("progress-bar-fill").style.width = `${pct}%`;
+      document.getElementById("progress-text").textContent = `${completedCount} / ${LOCATIONS.length}`;
+
+      // Sabotage Scramble Override
+      const scramble = team.sabotageState?.mapScramble;
+      const isScrambled = scramble?.active && scramble?.expiresAt > Date.now();
+
+      // Update Map Visuals
+      mapEngine.updateState({
+        currentIndex: currentIndex,
+        scrambleState: isScrambled ? scramble : null,
+        locations: LOCATIONS
+      });
+
+      // Update HUD Info
+      const hudStage = document.getElementById("hud-stage-label");
+      const hudName = document.getElementById("hud-location-name");
+      const hudClue = document.getElementById("hud-location-clue");
+      const hudPulse = document.getElementById("hud-pulse-dot");
+
+      if (isScrambled) {
+        const fakeLoc = LOCATIONS.find(l => l.id === scramble.fakeLocationId) || LOCATIONS[0];
+        hudStage.textContent = "⚠️ RADAR ANOMALY (SIGNAL SCRAMBLED)";
+        hudStage.style.color = "var(--amongus-orange)";
+        hudName.textContent = fakeLoc.name;
+        hudClue.textContent = "Interference detected! Target beacon fluctuating...";
+        hudPulse.style.background = "var(--amongus-orange)";
+        hudPulse.style.boxShadow = "0 0 10px var(--amongus-orange)";
+      } else {
+        const activeLoc = LOCATIONS.find(l => l.order === currentIndex) || LOCATIONS[0];
+        hudStage.textContent = `TARGET STATION ${currentIndex} OF ${LOCATIONS.length}`;
+        hudStage.style.color = "var(--amongus-blue)";
+        hudName.textContent = activeLoc.name;
+        hudClue.textContent = activeLoc.clue;
+        hudPulse.style.background = "var(--amongus-blue)";
+        hudPulse.style.boxShadow = "0 0 8px var(--amongus-blue)";
+      }
+    });
+
+    // Scanner Modal Handlers
+    const scannerModal = document.getElementById("scanner-modal");
+    document.getElementById("btn-open-scanner").addEventListener("click", () => {
+      sound.click();
+      scannerModal.style.display = "flex";
+    });
+    document.getElementById("btn-close-scanner").addEventListener("click", () => {
+      sound.click();
+      scannerModal.style.display = "none";
+    });
+    document.getElementById("btn-submit-manual-scan").addEventListener("click", () => {
+      const input = document.getElementById("manual-scan-input").value.trim();
+      if (!input) return;
+      window.location.href = input;
+    });
+
+    // Cleanup on unload
+    window.addEventListener("beforeunload", () => {
+      if (unsubscribe) unsubscribe();
+    });
+  </script>
+</body>
+</html>

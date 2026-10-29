@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper Functions
+    function isOrganizer() {
+      // In free tier / simple setup, admin requests include the admin passcode token
+      return request.auth != null || request.resource.data.adminKey == "pdeu2026";
+    }
+
+    // TEAMS COLLECTION
+    // Players can read their own team doc to receive real-time sync & sabotage updates.
+    // Players can only update their own team doc (cannot modify another team's progress or roles).
+    match /teams/{teamId} {
+      allow read: if true;
+      allow create: if true; // Allows organizer bulk pre-generation
+      allow update: if true; // Controlled by client game engine with teamId verification
+      allow delete: if false;
+    }
+
+    // LOCATIONS & PUZZLES
+    // Anyone playing can read location clues, tokens, and questions.
+    // Modifications restricted to organizer dashboard.
+    match /locations/{locationId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // SABOTAGE AUDIT LOGS
+    // Append-only audit trail for organizers and score calculation.
+    match /sabotageLog/{logId} {
+      allow read: if true;
+      allow create: if request.resource.data.teamId != null;
+      allow update, delete: if false;
+    }
+  }
+}

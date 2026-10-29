@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Among Us: PDEU Campus Treasure Hunt</title>
+  
+  <link rel="stylesheet" href="css/style.css">
+  
+  <!-- Firebase Compat CDN -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+  <!-- App Header -->
+  <header class="app-header">
+    <div class="header-brand">
+      <span class="brand-icon">🚀</span>
+      <h1 class="brand-title">PDEU AMONG US</h1>
+    </div>
+    <div class="header-actions">
+      <button id="btn-toggle-daylight" class="icon-btn" title="Toggle Outdoor Daylight Mode">☀️ Contrast</button>
+      <button id="btn-toggle-sound" class="icon-btn" title="Toggle Audio">🔊 Sound</button>
+    </div>
+  </header>
+
+  <!-- Main Login Screen -->
+  <main class="main-content">
+    <div class="cyber-card" style="text-align: center; margin-top: 10px;">
+      <!-- Among Us Crewmate Silhouette Animation -->
+      <div style="font-size: 64px; margin-bottom: 8px; animation: pulse-danger 2s infinite;">
+        🛸
+      </div>
+      <h2 class="card-title" style="justify-content: center; font-size: 26px;">
+        CAMPUS TREASURE HUNT
+      </h2>
+      <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 24px;">
+        Welcome Crewmate. Enter your physical registration credentials to board the PDEU Skeld expedition.
+      </p>
+
+      <form id="login-form">
+        <div class="form-group" style="text-align: left;">
+          <label class="form-label" for="player-name">Player Name / Codename</label>
+          <input 
+            type="text" 
+            id="player-name" 
+            class="cyber-input" 
+            placeholder="e.g. Red, Priya, Kabir" 
+            required 
+            maxlength="20"
+            autocomplete="nickname"
+          >
+        </div>
+
+        <div class="form-group" style="text-align: left;">
+          <label class="form-label" for="team-id">Team ID</label>
+          <input 
+            type="text" 
+            id="team-id" 
+            class="cyber-input mono" 
+            placeholder="e.g. TEAM-101" 
+            required 
+            style="text-transform: uppercase;"
+            autocomplete="off"
+          >
+          <span style="font-size: 11px; color: var(--text-dim); margin-top: 4px; display: block;">
+            Issued by organizers at check-in desk
+          </span>
+        </div>
+
+        <div class="form-group" style="text-align: left;">
+          <label class="form-label" for="team-pin">4-Digit Team PIN</label>
+          <input 
+            type="password" 
+            id="team-pin" 
+            class="cyber-input mono" 
+            placeholder="••••" 
+            required 
+            maxlength="6" 
+            inputmode="numeric"
+            autocomplete="current-password"
+          >
+        </div>
+
+        <button type="submit" id="btn-login-submit" class="btn-primary">
+          <span>BOARD SPACESHIP</span>
+          <span>➔</span>
+        </button>
+      </form>
+
+      <!-- Quick Demo Access (Helpful for reviewers & offline demo testing) -->
+      <div style="margin-top: 28px; padding-top: 18px; border-top: 1px dashed var(--border-subtle);">
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">
+          ⚡ Quick Demo Pre-fills (Instant Testing):
+        </p>
+        <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+          <button type="button" class="btn-secondary" style="font-size: 12px; padding: 6px 12px;" onclick="quickFill('TEAM-101', '1234', 'Cyan (Impostor)')">
+            Team 101 (4p - Impostor)
+          </button>
+          <button type="button" class="btn-secondary" style="font-size: 12px; padding: 6px 12px;" onclick="quickFill('TEAM-101', '1234', 'Red (Crewmate)')">
+            Team 101 (4p - Crewmate)
+          </button>
+          <button type="button" class="btn-secondary" style="font-size: 12px; padding: 6px 12px;" onclick="quickFill('TEAM-202', '2222', 'Sam (Rogue AI)')">
+            Team 202 (2p - Rogue AI)
+          </button>
+        </div>
+      </div>
+
+      <div style="margin-top: 20px; font-size: 12px;">
+        <a href="admin.html" style="color: var(--amongus-blue); text-decoration: none;">
+          🔐 Organizer / Admin Dashboard
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { firebaseService } from './js/firebase-service.js';
+    import { session, displayMode, showToast, generatePlayerId } from './js/app.js';
+    import { sound } from './js/sound.js';
+
+    // Daylight Mode Toggle
+    document.getElementById("btn-toggle-daylight").addEventListener("click", () => {
+      const isDay = displayMode.toggle();
+      showToast(isDay ? "High-Contrast Daylight Mode ON" : "Night Sci-Fi Mode ON", "info");
+    });
+
+    // Sound Toggle
+    const soundBtn = document.getElementById("btn-toggle-sound");
+    soundBtn.addEventListener("click", () => {
+      const isMuted = sound.toggleMute();
+      soundBtn.textContent = isMuted ? "🔇 Muted" : "🔊 Sound";
+      showToast(isMuted ? "Audio muted" : "Audio enabled", "info");
+    });
+    if (sound.getMuted()) soundBtn.textContent = "🔇 Muted";
+
+    // Auto-fill from localStorage if previously registered
+    const existingSession = session.get();
+    if (existingSession) {
+      document.getElementById("player-name").value = existingSession.playerName || "";
+      document.getElementById("team-id").value = existingSession.teamId || "";
+    }
+
+    // Quick-Fill Helper for Demo
+    window.quickFill = (teamId, pin, playerName) => {
+      document.getElementById("team-id").value = teamId;
+      document.getElementById("team-pin").value = pin;
+      document.getElementById("player-name").value = playerName;
+      sound.click();
+    };
+
+    // Form Submit Handler
+    const form = document.getElementById("login-form");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      sound.click();
+
+      const name = document.getElementById("player-name").value.trim();
+      const teamId = document.getElementById("team-id").value.trim().toUpperCase();
+      const pin = document.getElementById("team-pin").value.trim();
+      const submitBtn = document.getElementById("btn-login-submit");
+
+      if (!name || !teamId || !pin) {
+        showToast("Please fill all fields", "error");
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = "<span>VERIFYING REGISTRATION...</span>";
+
+      try {
+        const team = await firebaseService.getTeam(teamId);
+
+        if (!team) {
+          showToast(`Team '${teamId}' not found. Please verify with organizers.`, "error");
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = "<span>BOARD SPACESHIP</span><span>➔</span>";
+          return;
+        }
+
+        if (String(team.pin).trim() !== String(pin).trim()) {
+          showToast("Incorrect 4-digit Team PIN", "error");
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = "<span>BOARD SPACESHIP</span><span>➔</span>";
+          return;
+        }
+
+        const players = team.players || [];
+        const existingPlayer = players.find(p => p.name.toLowerCase() === name.toLowerCase());
+
+        let playerProfile = null;
+
+        if (existingPlayer) {
+          // Returning player
+          playerProfile = existingPlayer;
+        } else {
+          // New player joining
+          const teamSize = team.size || 4;
+
+          if (players.length >= teamSize) {
+            showToast(`Team '${teamId}' is already full (${teamSize} players maximum).`, "error");
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = "<span>BOARD SPACESHIP</span><span>➔</span>";
+            return;
+          }
+
+          // Determine role
+          let role = "crewmate";
+          if (teamSize === 2) {
+            role = "survivor"; // 2-player rogue AI mode
+          } else {
+            // For 3-4 player teams: ensure exactly one impostor
+            const hasImpostor = players.some(p => p.role === "impostor");
+            const isLastSlot = players.length === teamSize - 1;
+
+            if (!hasImpostor && (isLastSlot || Math.random() < 0.35)) {
+              role = "impostor";
+            } else {
+              role = "crewmate";
+            }
+          }
+
+          const newPlayerId = generatePlayerId(teamId);
+          playerProfile = {
+            playerId: newPlayerId,
+            name: name,
+            role: role,
+            joinedAt: Date.now()
+          };
+
+          players.push(playerProfile);
+
+          // Update team in Firestore
+          await firebaseService.updateTeam(teamId, {
+            players: players,
+            startTime: team.startTime || Date.now()
+          });
+        }
+
+        // Save session locally
+        session.set({
+          teamId: teamId,
+          playerName: playerProfile.name,
+          playerId: playerProfile.playerId,
+          role: playerProfile.role,
+          teamSize: team.size || 4
+        });
+
+        sound.success();
+        showToast(`Welcome aboard, ${playerProfile.name}!`, "success");
+
+        // Check if there was a returnUrl (e.g. from scanning a QR code while logged out)
+        const urlParams = new URLSearchParams(window.location.search);
+        const returnUrl = urlParams.get("returnUrl");
+
+        setTimeout(() => {
+          if (returnUrl) {
+            window.location.href = decodeURIComponent(returnUrl);
+          } else {
+            window.location.href = "role.html";
+          }
+        }, 600);
+
+      } catch (err) {
+        console.error(err);
+        showToast("Error connecting to server: " + err.message, "error");
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = "<span>BOARD SPACESHIP</span><span>➔</span>";
+      }
+    });
+  </script>
+</body>
+</html>
