@@ -87,7 +87,10 @@
     document.getElementById('player-tag').textContent = `${user.teamId} · ${user.playerName} ${roleIcon}`;
 
     // Init map
-    const mapEngine = new CampusMapEngine(document.getElementById('map-container'), { locations: LOCATIONS });
+    const mapEngine = new CampusMapEngine(document.getElementById('map-container'), {
+      locations: LOCATIONS,
+      showNavigation: false
+    });
 
     // Real-time subscription
     let unsub = firebaseService.subscribeTeam(user.teamId, (team) => {
@@ -132,15 +135,14 @@
         label.textContent = '⚠ RADAR ANOMALY';
         label.style.color = '#f17d0e';
         dot.style.background = '#f17d0e';
-        name.textContent = fake.name;
-        clue.textContent = 'Signal interference... target may be inaccurate';
+        name.textContent = 'Navigation scrambled';
+        clue.textContent = 'Use the answer from your last puzzle to find the next location.';
       } else {
-        const loc = LOCATIONS.find(l => l.order === idx) || LOCATIONS[0];
         label.textContent = `STATION ${idx} OF ${LOCATIONS.length}`;
         label.style.color = '';
         dot.style.background = '';
-        name.textContent = loc.name;
-        clue.textContent = loc.clue;
+        name.textContent = 'Find the next station';
+        clue.textContent = 'Solve the puzzle at the current station to reveal where to go next.';
       }
     });
 

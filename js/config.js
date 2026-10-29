@@ -82,10 +82,10 @@ export const LOCATIONS = [
     token: "OG842X1",
     clue: "Head to the central Osail Gazebo pavilion beside the Cricket Ground and OSAIL Ground.",
     puzzle: {
-      question: "How many perimeter support pillars hold up the OSAIL Gazebo roof? Multiply that count by 3, then add the number of stone benches inside.",
-      type: "number",
-      answer: "28", // (8 pillars * 3) + 4 benches
-      hint: "Count the octagonal metal pillars around the outer edge first, then add the seating benches."
+      question: "Decode the next destination: walk east between the academic blocks to the gazebo under the tree grove. Enter its station name.",
+      type: "text",
+      answer: "D Block Gazebo",
+      hint: "The answer is the name of the next gazebo."
     },
     decoyPuzzle: {
       question: "Enter the serial number etched onto the electrical conduit beneath the central canopy lamp: [HEX-CODE]",
@@ -102,10 +102,10 @@ export const LOCATIONS = [
     token: "DG519K2",
     clue: "Head east between D Block and C Block. Locate D Gazebo shaded under the tree grove.",
     puzzle: {
-      question: "Inspect the green electrical substation unit near D Block Gazebo. What is the 3-digit voltage hazard rating printed on the caution triangle?",
-      type: "number",
-      answer: "440",
-      hint: "Look for the yellow high voltage lightning symbol on the metal panel."
+      question: "Decode the next destination: find the gazebo inside the inner courtyard near the academic department entrance. Enter its station name.",
+      type: "text",
+      answer: "C Block Gazebo",
+      hint: "The answer is the name of the next gazebo."
     },
     decoyPuzzle: {
       question: "Count the total number of red patterned paver stones forming the ramp entry.",
@@ -122,10 +122,10 @@ export const LOCATIONS = [
     token: "CG773M3",
     clue: "Walk into the inner courtyard of C Block. Spot C Gazebo near the academic department entrance.",
     puzzle: {
-      question: "What is the acronym of the international student technical chapter engraved on the commemorative pillar plaque? (All caps)",
+      question: "Decode the next destination: travel northeast to the open curved amphitheater seating area outside A Block. Enter its station name.",
       type: "text",
-      answer: "SPE",
-      hint: "Society of Petroleum Engineers..."
+      answer: "A Block Seating",
+      hint: "The answer is the name of the next location."
     },
     decoyPuzzle: {
       question: "Transcribe the Roman numerals on the concrete base foundation stone.",
@@ -142,10 +142,10 @@ export const LOCATIONS = [
     token: "AS312P4",
     clue: "Proceed northeast towards A Block. Locate the open curved amphitheater seating area (A seating).",
     puzzle: {
-      question: "The concrete benches outside A Block are arranged in arcs. How many total wooden slat bench sections exist along the inner circular arc?",
-      type: "number",
-      answer: "12",
-      hint: "Walk along the inner ring from left to right."
+      question: "Decode the next destination: head to the northern quad near the dining hall and find the canopy float. Enter its station name.",
+      type: "text",
+      answer: "Ness 1 Float (Mess)",
+      hint: "The answer is the name of the next location."
     },
     decoyPuzzle: {
       question: "What room number is directly visible through the first ground-floor faculty office window?",
@@ -162,10 +162,10 @@ export const LOCATIONS = [
     token: "NF904R5",
     clue: "Navigate to the northern quad near the dining hall. Spot the Mess / Ness 1 canopy structure.",
     puzzle: {
-      question: "Examine the dedication marker plaque at the base of the Ness 1 Float installation. What 4-digit year is inscribed?",
-      type: "number",
-      answer: "2019",
-      hint: "The metallic plaque is mounted near the foundation support."
+      question: "Decode the final destination: go south of D Block to the grand stage complex. Enter its station name.",
+      type: "text",
+      answer: "Gemini Stage (Germi)",
+      hint: "The answer is the name of the final stage."
     },
     decoyPuzzle: {
       question: "Count the total number of braided stainless steel suspension cables in the canopy float.",
@@ -182,10 +182,10 @@ export const LOCATIONS = [
     token: "GS661Z6",
     clue: "Final Station! Reach the grand Gemini Stage / Germi complex directly south of D Block.",
     puzzle: {
-      question: "Count the number of main overhead truss lighting mount clamps (8) PLUS the number of concrete access steps (10) leading onto the stage. Enter the sum:",
-      type: "number",
-      answer: "18",
-      hint: "8 overhead spotlight clamps + 10 concrete steps = ?"
+      question: "This is the final station. Enter FINISH to complete the campus route.",
+      type: "text",
+      answer: "FINISH",
+      hint: "There is no next location after the final stage."
     },
     decoyPuzzle: {
       question: "Input the 6-character emergency broadcast serial code found on the backstage power distribution box.",

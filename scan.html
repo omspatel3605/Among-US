@@ -218,7 +218,8 @@
 
       document.getElementById("badge-station-num").textContent = `STATION ${targetLocation.order}/${LOCATIONS.length}`;
       document.getElementById("puzzle-station-name").textContent = targetLocation.name;
-      document.getElementById("puzzle-station-clue").textContent = targetLocation.clue || "";
+      document.getElementById("puzzle-station-clue").textContent =
+        "Solve this location puzzle. Your answer is the next destination.";
 
       const locProgress = currentTeam.progress?.[targetLocation.id] || {};
       wrongAttemptsCount = locProgress.wrongAttempts || 0;
@@ -352,8 +353,7 @@
         nextBtn.textContent = "FINAL DEBRIEF →";
         nextBtn.onclick = () => window.location.href = "finish.html";
       } else {
-        const nextLoc = LOCATIONS.find(l => l.order === nextIdx);
-        desc.innerHTML = `Beacon decoded! Radar pointing to: <strong>${nextLoc ? nextLoc.name : 'Station ' + nextIdx}</strong>.`;
+        desc.innerHTML = "Location decoded! Use your answer to find the next station.";
         nextBtn.textContent = "CONTINUE TO MAP →";
         nextBtn.onclick = () => window.location.href = "map.html";
       }

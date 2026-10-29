@@ -31,6 +31,7 @@ export class CampusMapEngine {
     this.scrambleOverride = null;
     this.calibrationMode = options.calibrationMode || false;
     this.onCoordinateClick = options.onCoordinateClick || null;
+    this.showNavigation = options.showNavigation !== false;
 
     this.init();
   }
@@ -55,19 +56,19 @@ export class CampusMapEngine {
       mapImg.src = "assets/images/campus-map.svg";
     };
 
-    // SVG Walking Path Overlay
-    this.pathSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    this.pathSvg.setAttribute("class", "map-paths-svg");
-    this.pathSvg.setAttribute("viewBox", "0 0 100 100");
-    this.pathSvg.setAttribute("preserveAspectRatio", "none");
-
     // Pins Container
     this.pinsContainer = document.createElement("div");
     this.pinsContainer.className = "map-pins-layer";
 
     this.canvasWrapper.appendChild(mapImg);
-    this.canvasWrapper.appendChild(this.pathSvg);
-    this.canvasWrapper.appendChild(this.pinsContainer);
+    if (this.showNavigation) {
+      this.pathSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      this.pathSvg.setAttribute("class", "map-paths-svg");
+      this.pathSvg.setAttribute("viewBox", "0 0 100 100");
+      this.pathSvg.setAttribute("preserveAspectRatio", "none");
+      this.canvasWrapper.appendChild(this.pathSvg);
+      this.canvasWrapper.appendChild(this.pinsContainer);
+    }
     this.container.appendChild(this.canvasWrapper);
 
     // Create On-Screen Controls (+, -, Reset, Calibration Toggle)
@@ -77,8 +78,10 @@ export class CampusMapEngine {
     this.bindEvents();
 
     // Render Initial State
-    this.renderPins();
-    this.drawWalkingPath();
+    if (this.showNavigation) {
+      this.renderPins();
+      this.drawWalkingPath();
+    }
     this.resetView();
   }
 
@@ -225,8 +228,10 @@ export class CampusMapEngine {
     this.currentLocationIndex = currentIndex;
     this.scrambleOverride = scrambleState;
     if (locations) this.locations = locations;
-    this.renderPins();
-    this.drawWalkingPath();
+    if (this.showNavigation) {
+      this.renderPins();
+      this.drawWalkingPath();
+    }
   }
 
   /**
