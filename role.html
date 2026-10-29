@@ -15,22 +15,16 @@
   <div id="reveal-screen" class="screen active">
     <div class="reveal-wrapper">
       
-      <!-- Pre-reveal suspense -->
-      <div id="reveal-suspense" class="reveal-phase">
-        <div class="reveal-suspense-text">DECRYPTING<br>ASSIGNMENT</div>
-        <div class="reveal-dots"><span>.</span><span>.</span><span>.</span></div>
-      </div>
-
-      <!-- Actual reveal (shown after 2.5s delay) -->
-      <div id="reveal-content" class="reveal-phase hidden">
+      <!-- Actual reveal (Shown instantly with zero delay) -->
+      <div id="reveal-content" class="reveal-phase">
         <!-- Among Us Character -->
         <div id="reveal-character" class="reveal-character">
-          <svg viewBox="0 0 120 160" width="140" height="185">
-            <rect x="6" y="50" width="22" height="60" rx="10" fill="#0a2140" stroke="currentColor" stroke-width="3"/>
+          <svg viewBox="0 0 120 160" width="130" height="175">
+            <rect x="6" y="50" width="22" height="60" rx="10" fill="#0a2140" stroke="#ffffff" stroke-width="3"/>
             <path d="M 30 28 C 30 10, 100 10, 100 28 L 100 115 C 100 135, 88 145, 78 148 L 72 148 C 64 148, 62 135, 62 125 L 62 125 C 62 135, 56 148, 48 148 L 42 148 C 32 148, 30 130, 30 115 Z"
-                  class="reveal-bean-body" stroke="#eaeaea" stroke-width="3.5"/>
-            <ellipse cx="78" cy="55" rx="22" ry="16" class="reveal-bean-visor" stroke="#eaeaea" stroke-width="3"/>
-            <ellipse cx="84" cy="49" rx="10" ry="6" fill="#ffffff" opacity="0.5"/>
+                  class="reveal-bean-body" stroke="#ffffff" stroke-width="3.5"/>
+            <ellipse cx="78" cy="55" rx="22" ry="16" class="reveal-bean-visor" stroke="#ffffff" stroke-width="3"/>
+            <ellipse cx="84" cy="49" rx="10" ry="6" fill="#ffffff" opacity="0.6"/>
           </svg>
         </div>
 
@@ -42,10 +36,10 @@
 
         <!-- Role Description Card -->
         <div id="reveal-desc" class="card reveal-desc-card">
-          Loading...
+          Loading role parameters...
         </div>
 
-        <!-- Impostor Abilities (hidden for non-impostors) -->
+        <!-- Impostor Abilities (Hidden for non-impostors) -->
         <div id="reveal-abilities" class="hidden">
           <div class="ability-card ability-purple">
             <span class="ability-icon">🧩</span>
@@ -71,7 +65,7 @@
         </div>
 
         <!-- Proceed Button -->
-        <button id="btn-proceed" class="btn-primary btn-full-bottom" onclick="proceed()">
+        <button id="btn-proceed" class="btn-primary" onclick="proceed()" style="margin-top:16px;">
           PROCEED TO CAMPUS RADAR →
         </button>
       </div>
@@ -88,34 +82,29 @@
     const user = session.requireAuth();
     if (!user) { window.location.href = "index.html"; }
 
-    // Sync latest role from Firestore
-    async function initReveal() {
-      let role = user.role;
-      let teamSize = user.teamSize || 4;
+    // Instant zero-delay role reveal
+    function initReveal() {
+      const role = user.role || 'crewmate';
+      const teamSize = user.teamSize || 4;
+      const playerColor = user.color || '#38fedc';
 
-      try {
-        const team = await firebaseService.getTeam(user.teamId);
+      renderRole(role, teamSize, playerColor);
+
+      // Background check in case role needs silent refresh
+      firebaseService.getTeam(user.teamId).then(team => {
         if (team && team.players) {
           const me = team.players.find(p => p.playerId === user.playerId);
-          if (me) {
-            role = me.role;
-            user.role = role;
-            user.teamSize = team.maxSize || team.size;
-            teamSize = user.teamSize;
+          if (me && me.role && me.role !== user.role) {
+            user.role = me.role;
+            user.color = me.color || user.color;
             session.set(user);
+            renderRole(me.role, team.maxSize || team.size, me.color);
           }
         }
-      } catch (e) { console.warn("Could not sync role:", e); }
-
-      // Delay for suspense
-      setTimeout(() => {
-        document.getElementById('reveal-suspense').classList.add('hidden');
-        document.getElementById('reveal-content').classList.remove('hidden');
-        renderRole(role, teamSize);
-      }, 2500);
+      }).catch(() => {});
     }
 
-    function renderRole(role, teamSize) {
+    function renderRole(role, teamSize, playerColor) {
       const title = document.getElementById('reveal-title');
       const subtitle = document.getElementById('reveal-subtitle');
       const desc = document.getElementById('reveal-desc');
@@ -125,13 +114,13 @@
       const visor = document.querySelector('.reveal-bean-visor');
 
       if (teamSize === 2 || role === 'survivor') {
-        // ROGUE AI MODE
+        // ROGUE AI MODE (Both players)
         title.textContent = "⚠ ROGUE AI DETECTED";
         title.style.color = '#f5f557';
         subtitle.textContent = "THE SHIP'S AI IS UNSTABLE";
-        body.style.fill = '#f5f557';
-        visor.style.fill = '#ffff99';
-        character.style.filter = 'drop-shadow(0 0 30px rgba(245,245,87,0.6))';
+        body.style.fill = playerColor || '#f5f557';
+        visor.style.fill = '#ffffff';
+        character.style.filter = 'drop-shadow(0 0 30px rgba(245,245,87,0.7))';
 
         desc.innerHTML = `
           <p>You are a <strong style="color:#f5f557">2-player recovery duo</strong>.</p>
@@ -143,13 +132,13 @@
         vibrate([200, 100, 200]);
 
       } else if (role === 'impostor') {
-        // IMPOSTOR
+        // IMPOSTOR (Instant Reveal)
         title.textContent = "IMPOSTOR";
         title.style.color = '#c51111';
         subtitle.textContent = "SABOTAGE FROM THE SHADOWS";
         body.style.fill = '#c51111';
         visor.style.fill = '#38fedc';
-        character.style.filter = 'drop-shadow(0 0 40px rgba(197,17,17,0.7))';
+        character.style.filter = 'drop-shadow(0 0 40px rgba(197,17,17,0.8))';
         document.body.style.background = 'radial-gradient(ellipse at center, #2a0a0a 0%, #121326 60%)';
 
         desc.innerHTML = `
@@ -163,13 +152,13 @@
         vibrate([100, 50, 100, 50, 300]);
 
       } else {
-        // CREWMATE
+        // CREWMATE (Instant Reveal)
         title.textContent = "CREWMATE";
         title.style.color = '#38fedc';
         subtitle.textContent = "PDEU EXPEDITION TASK FORCE";
-        body.style.fill = '#132ed1';
+        body.style.fill = playerColor || '#132ed1';
         visor.style.fill = '#38fedc';
-        character.style.filter = 'drop-shadow(0 0 25px rgba(56,254,220,0.5))';
+        character.style.filter = 'drop-shadow(0 0 25px rgba(56,254,220,0.6))';
 
         desc.innerHTML = `
           <p>You are a <strong style="color:#38fedc">CREWMATE</strong>.</p>

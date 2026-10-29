@@ -177,7 +177,7 @@
     import { firebaseService } from './js/firebase-service.js';
     import { session, displayMode, showToast, generatePlayerId, vibrate } from './js/app.js';
     import { sound } from './js/sound.js';
-    import { generateRoomCode } from './js/config.js';
+    import { generateRoomCode, AMONG_US_COLORS } from './js/config.js';
 
     // Apply display mode
     displayMode.apply();
@@ -227,10 +227,14 @@
         const roomCode = generateRoomCode();
         const playerId = generatePlayerId(roomCode);
 
+        const myColor = AMONG_US_COLORS[0];
         const hostPlayer = {
           playerId,
           name,
           role: null,
+          color: myColor.hex,
+          colorName: myColor.name,
+          location: { x: 46.5, y: 41.0 },
           joinedAt: Date.now()
         };
 
@@ -241,6 +245,8 @@
           playerName: name,
           playerId,
           role: null,
+          color: myColor.hex,
+          colorName: myColor.name,
           teamSize: selectedSize,
           isHost: true
         });
@@ -303,11 +309,16 @@
             return;
           }
 
+          const colorIdx = players.length % AMONG_US_COLORS.length;
+          const myColor = AMONG_US_COLORS[colorIdx];
           const playerId = generatePlayerId(code);
           playerProfile = {
             playerId,
             name,
             role: null,
+            color: myColor.hex,
+            colorName: myColor.name,
+            location: { x: 46.5, y: 41.0 },
             joinedAt: Date.now()
           };
 
@@ -320,6 +331,8 @@
           playerName: playerProfile.name,
           playerId: playerProfile.playerId,
           role: playerProfile.role,
+          color: playerProfile.color,
+          colorName: playerProfile.colorName,
           teamSize: team.maxSize || team.size || 4,
           isHost: team.hostPlayerId === playerProfile.playerId
         });
@@ -375,12 +388,13 @@
         if (!team) return;
         renderLobbyPlayers(team, isHost);
 
-        // If the game was started by host, redirect all players
+        // If the game was started by host, redirect all players instantly
         if (team.status === "playing") {
           const myPlayer = (team.players || []).find(p => p.playerId === session.get()?.playerId);
           if (myPlayer && myPlayer.role) {
             const sess = session.get();
             sess.role = myPlayer.role;
+            sess.color = myPlayer.color || sess.color;
             sess.teamSize = team.maxSize || team.size;
             session.set(sess);
             window.location.href = "role.html";
@@ -390,8 +404,6 @@
     }
 
     // Render lobby player list
-    const AU_COLORS = ['#c51111','#132ed1','#117f2d','#ed54ba','#ef7d0e','#f5f558','#3f474e','#d6e0f0','#6b2fbc','#71491e','#38fedc','#50ef39'];
-
     function renderLobbyPlayers(team, isHost) {
       const list = document.getElementById('lobby-player-list');
       const players = team.players || [];
@@ -403,14 +415,14 @@
         const slot = document.createElement('div');
         
         if (player) {
-          const color = AU_COLORS[i % AU_COLORS.length];
+          const colorHex = player.color || AMONG_US_COLORS[i % AMONG_US_COLORS.length].hex;
           const isMe = player.playerId === session.get()?.playerId;
           slot.className = 'lobby-slot lobby-slot-filled';
           slot.innerHTML = `
-            <div class="slot-color" style="background:${color}"></div>
+            <div class="slot-color" style="background:${colorHex}"></div>
             <div class="slot-info">
               <span class="slot-name">${player.name}${isMe ? ' (You)' : ''}</span>
-              <span class="slot-id">${player.playerId?.slice(-4) || ''}</span>
+              <span class="slot-id">${player.colorName || 'Crewmate'} • ${player.playerId?.slice(-4) || ''}</span>
             </div>
             ${player.playerId === team.hostPlayerId ? '<span class="slot-host-badge">HOST</span>' : ''}
           `;
@@ -438,20 +450,26 @@
       }
     }
 
-    // START GAME (Host only)
+    // START GAME (Host only) - Starts immediately with zero lag!
     window.doStartGame = async function() {
       const sess = session.get();
       if (!sess || !sess.isHost) return;
 
       const btn = document.getElementById('btn-start-game');
       btn.disabled = true;
-      btn.textContent = "ASSIGNING ROLES...";
+      btn.textContent = "LAUNCHING...";
 
       try {
-        await firebaseService.startGame(sess.teamId);
+        const updates = await firebaseService.startGame(sess.teamId);
+        const me = (updates.players || []).find(p => p.playerId === sess.playerId);
+        if (me && me.role) {
+          sess.role = me.role;
+          sess.color = me.color || sess.color;
+          session.set(sess);
+        }
         sound.sabotageAlarm();
         vibrate([100, 50, 100, 50, 200]);
-        // The subscribeTeam listener will detect status change and redirect
+        window.location.href = "role.html"; // Redirect host immediately!
       } catch (err) {
         showToast("Error starting: " + err.message, "error");
         btn.disabled = false;

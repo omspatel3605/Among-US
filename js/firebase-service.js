@@ -4,7 +4,7 @@
  * or runs in local mock mode so testing works immediately.
  */
 
-import { FIREBASE_CONFIG, isDemoConfig, LOCATIONS } from './config.js';
+import { FIREBASE_CONFIG, isDemoConfig, LOCATIONS, AMONG_US_COLORS } from './config.js';
 
 class FirebaseService {
   constructor() {
@@ -148,13 +148,21 @@ class FirebaseService {
     await this.ready();
     const cleanId = String(roomCode).trim().toUpperCase();
 
+    const colorObj = hostPlayer.color || AMONG_US_COLORS[0];
+    const initialPlayer = {
+      ...hostPlayer,
+      color: colorObj.hex || colorObj,
+      colorName: colorObj.name || "Red",
+      location: { x: 46.5, y: 41.0, updatedAt: Date.now() } // Default to OSAIL Gazebo
+    };
+
     const teamData = {
       id: cleanId,
       hostPlayerId: hostPlayer.playerId,
       size: teamSize,
       maxSize: teamSize,
       status: "lobby", // 'lobby' -> 'playing' -> 'finished'
-      players: [hostPlayer],
+      players: [initialPlayer],
       currentLocationIndex: 1,
       progress: {},
       sabotageState: {
@@ -269,6 +277,47 @@ class FirebaseService {
       return () => {
         this.listeners.delete(cleanId);
       };
+    }
+  }
+
+  /**
+   * Real-time GPS location broadcast
+   * Throttled to avoid overwhelming Firestore writes
+   */
+  async updatePlayerLocation(teamId, playerId, coords) {
+    if (!teamId || !playerId || !coords) return;
+    const cleanId = String(teamId).trim().toUpperCase();
+
+    // Check last update time to throttle (once every 3 seconds per player)
+    const now = Date.now();
+    if (this._lastLocationUpdate && (now - this._lastLocationUpdate < 2800)) {
+      return;
+    }
+    this._lastLocationUpdate = now;
+
+    try {
+      const team = await this.getTeam(cleanId);
+      if (!team || !team.players) return;
+
+      const players = team.players.map(p => {
+        if (p.playerId === playerId) {
+          return {
+            ...p,
+            location: {
+              x: coords.x,
+              y: coords.y,
+              lat: coords.lat,
+              lng: coords.lng,
+              updatedAt: now
+            }
+          };
+        }
+        return p;
+      });
+
+      await this.updateTeam(cleanId, { players });
+    } catch (err) {
+      console.warn("Location sync failed:", err);
     }
   }
 

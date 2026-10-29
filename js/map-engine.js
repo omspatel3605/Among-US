@@ -1,7 +1,7 @@
 /**
  * Interactive Pan-Zoom Among Us Campus Map Engine
- * Supports smooth gesture/mouse pan-zoom, dynamic bean pins,
- * walking path rendering, admin calibration mode, and Map Scramble sabotage override.
+ * Supports smooth gesture/mouse pan-zoom, real-time player avatars with Among Us colors,
+ * hiding unrevealed future stations, GPS mapping, and Map Scramble sabotage override.
  */
 
 import { LOCATIONS } from './config.js';
@@ -13,10 +13,11 @@ export class CampusMapEngine {
     this.container = containerEl;
     this.canvasWrapper = null;
     this.pinsContainer = null;
+    this.playersContainer = null;
     this.pathSvg = null;
 
     this.scale = 1;
-    this.minScale = 0.6;
+    this.minScale = 0.4;
     this.maxScale = 3.5;
     this.panX = 0;
     this.panY = 0;
@@ -31,7 +32,6 @@ export class CampusMapEngine {
     this.scrambleOverride = null;
     this.calibrationMode = options.calibrationMode || false;
     this.onCoordinateClick = options.onCoordinateClick || null;
-    this.showNavigation = options.showNavigation !== false;
 
     this.init();
   }
@@ -56,19 +56,24 @@ export class CampusMapEngine {
       mapImg.src = "assets/images/campus-map.svg";
     };
 
+    // SVG Walking Path Overlay (Hidden per user requirement)
+    this.pathSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    this.pathSvg.setAttribute("class", "map-paths-svg");
+    this.pathSvg.setAttribute("viewBox", "0 0 100 100");
+    this.pathSvg.setAttribute("preserveAspectRatio", "none");
+
     // Pins Container
     this.pinsContainer = document.createElement("div");
     this.pinsContainer.className = "map-pins-layer";
 
+    // Real-Time Players Layer (Displays live colored Among Us characters)
+    this.playersContainer = document.createElement("div");
+    this.playersContainer.className = "map-players-layer";
+
     this.canvasWrapper.appendChild(mapImg);
-    if (this.showNavigation) {
-      this.pathSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-      this.pathSvg.setAttribute("class", "map-paths-svg");
-      this.pathSvg.setAttribute("viewBox", "0 0 100 100");
-      this.pathSvg.setAttribute("preserveAspectRatio", "none");
-      this.canvasWrapper.appendChild(this.pathSvg);
-      this.canvasWrapper.appendChild(this.pinsContainer);
-    }
+    this.canvasWrapper.appendChild(this.pathSvg);
+    this.canvasWrapper.appendChild(this.pinsContainer);
+    this.canvasWrapper.appendChild(this.playersContainer);
     this.container.appendChild(this.canvasWrapper);
 
     // Create On-Screen Controls (+, -, Reset, Calibration Toggle)
@@ -78,10 +83,8 @@ export class CampusMapEngine {
     this.bindEvents();
 
     // Render Initial State
-    if (this.showNavigation) {
-      this.renderPins();
-      this.drawWalkingPath();
-    }
+    this.renderPins();
+    this.drawWalkingPath();
     this.resetView();
   }
 
@@ -103,14 +106,15 @@ export class CampusMapEngine {
     controls.querySelector("#btn-calibrate-toggle").addEventListener("click", (e) => {
       this.calibrationMode = !this.calibrationMode;
       e.target.classList.toggle("active", this.calibrationMode);
-      showToast(this.calibrationMode ? "📍 Calibration Mode ON: Click anywhere on map to log coordinates!" : "Calibration Mode OFF", "info");
+      this.renderPins();
+      showToast(this.calibrationMode ? "📍 Calibration Mode ON: Click map to log coordinates!" : "Calibration Mode OFF", "info");
     });
   }
 
   bindEvents() {
     // Mouse Drag
     this.container.addEventListener("mousedown", (e) => {
-      if (e.target.closest(".map-floating-controls")) return;
+      if (e.target.closest(".map-floating-controls") || e.target.closest(".amongus-pin") || e.target.closest(".player-avatar-marker")) return;
       this.isDragging = true;
       this.startX = e.clientX - this.panX;
       this.startY = e.clientY - this.panY;
@@ -182,7 +186,7 @@ export class CampusMapEngine {
       console.log(`📍 Calibrated Pin Position: coords: { x: ${xPct}, y: ${yPct} }`);
       const coordStr = `{ x: ${xPct}, y: ${yPct} }`;
       navigator.clipboard?.writeText(coordStr);
-      showToast(`Logged coords: ${coordStr} (Copied to clipboard!)`, "info");
+      showToast(`Logged coords: ${coordStr} (Copied!)`, "info");
 
       if (this.onCoordinateClick) {
         this.onCoordinateClick({ x: xPct, y: yPct });
@@ -222,20 +226,21 @@ export class CampusMapEngine {
   }
 
   /**
-   * Update team's current progression and live sabotage scramble state
+   * Update team's current progression, sabotage state, and real-time player locations
    */
-  updateState({ currentIndex = 1, scrambleState = null, locations = null }) {
+  updateState({ currentIndex = 1, scrambleState = null, locations = null, players = [], currentUserId = null }) {
     this.currentLocationIndex = currentIndex;
     this.scrambleOverride = scrambleState;
     if (locations) this.locations = locations;
-    if (this.showNavigation) {
-      this.renderPins();
-      this.drawWalkingPath();
-    }
+    this.renderPins();
+    this.drawWalkingPath();
+    this.renderPlayers(players, currentUserId);
   }
 
   /**
    * Render Among Us style bean pins with live radar states
+   * CRITICAL REQUIREMENT: Future stations (stage 2, 3, 4, 5, 6) are 100% HIDDEN!
+   * Players must solve the puzzle to unlock the next destination!
    */
   renderPins() {
     this.pinsContainer.innerHTML = "";
@@ -245,23 +250,29 @@ export class CampusMapEngine {
     const fakeLocationId = isScrambled ? this.scrambleOverride.fakeLocationId : null;
 
     this.locations.forEach((loc) => {
-      const pin = document.createElement("div");
-      pin.className = "amongus-pin";
-      pin.style.left = `${loc.coords.x}%`;
-      pin.style.top = `${loc.coords.y}%`;
-
-      let status = "locked"; // 'completed', 'active', 'locked', 'scrambled'
+      let status = "locked";
 
       if (loc.order < activeIndex) {
         status = "completed";
       } else if (loc.order === activeIndex) {
-        status = isScrambled ? "locked" : "active"; // Real pin is dimmed during scramble!
+        status = isScrambled ? "locked" : "active";
       }
 
       // If this pin is the fake decoy target during Map Scramble sabotage:
       if (isScrambled && loc.id === fakeLocationId) {
-        status = "scrambled"; // Deceptively highlighted!
+        status = "scrambled";
       }
+
+      // HIDE ALL FUTURE STATIONS:
+      // Players must figure out the path themselves through puzzles!
+      if (loc.order > activeIndex && status !== "scrambled" && !this.calibrationMode) {
+        return; // Do NOT render future pins!
+      }
+
+      const pin = document.createElement("div");
+      pin.className = "amongus-pin";
+      pin.style.left = `${loc.coords.x}%`;
+      pin.style.top = `${loc.coords.y}%`;
 
       pin.classList.add(`pin-${status}`);
 
@@ -270,12 +281,9 @@ export class CampusMapEngine {
         <div class="pin-beacon"></div>
         <div class="pin-marker">
           <svg viewBox="0 0 40 50" class="bean-svg">
-            <!-- Backpack -->
             <rect x="2" y="16" width="7" height="20" rx="3" fill="#0f172a" stroke="#ffffff" stroke-width="2"/>
-            <!-- Body -->
             <path d="M 12 10 C 12 4, 34 4, 34 10 L 34 38 C 34 44, 30 46, 26 46 L 24 46 C 21 46, 21 42, 21 38 L 21 38 C 21 42, 19 46, 16 46 L 14 46 C 10 46, 12 40, 12 36 Z" 
                   class="bean-body" stroke="#ffffff" stroke-width="2.5" />
-            <!-- Visor -->
             <ellipse cx="26" cy="18" rx="8" ry="5.5" class="bean-visor" stroke="#ffffff" stroke-width="2"/>
             <ellipse cx="28" cy="16" rx="4" ry="2" fill="#ffffff" opacity="0.6"/>
           </svg>
@@ -284,7 +292,7 @@ export class CampusMapEngine {
         <div class="pin-card">
           <div class="pin-name">${status === 'scrambled' ? '⚠️ ' + loc.name + ' (DECIPHERED)' : loc.name}</div>
           <div class="pin-status-text">
-            ${status === 'completed' ? 'CLEARED' : status === 'active' ? 'TARGET NEXT' : status === 'scrambled' ? 'RADAR LOCKED' : 'LOCKED'}
+            ${status === 'completed' ? 'CLEARED' : status === 'active' ? 'ACTIVE TARGET' : status === 'scrambled' ? 'RADAR LOCKED' : 'LOCKED'}
           </div>
         </div>
       `;
@@ -300,36 +308,60 @@ export class CampusMapEngine {
 
   onPinClick(loc, status) {
     if (status === "active" || status === "scrambled") {
-      showToast(`Current Objective: ${loc.name}. Visit in person and scan the QR code!`, "info");
+      showToast(`Current Objective: ${loc.name}. Head here and scan QR code!`, "info");
     } else if (status === "completed") {
       showToast(`Already cleared: ${loc.name}`, "success");
-    } else {
-      showToast(`Station locked: Visit locations in sequential order!`, "error");
     }
   }
 
   /**
-   * Draw dashed Among Us walking path between sequential locations
+   * User requirement: Do NOT show paths! Players must figure out the path themselves.
    */
   drawWalkingPath() {
-    this.pathSvg.innerHTML = "";
-
-    const sorted = [...this.locations].sort((a, b) => a.order - b.order);
-
-    for (let i = 0; i < sorted.length - 1; i++) {
-      const from = sorted[i];
-      const to = sorted[i + 1];
-
-      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-      line.setAttribute("x1", `${from.coords.x}%`);
-      line.setAttribute("y1", `${from.coords.y}%`);
-      line.setAttribute("x2", `${to.coords.x}%`);
-      line.setAttribute("y2", `${to.coords.y}%`);
-
-      const isDone = to.order <= this.currentLocationIndex;
-      line.setAttribute("class", isDone ? "path-line path-cleared" : "path-line path-pending");
-
-      this.pathSvg.appendChild(line);
+    if (this.pathSvg) {
+      this.pathSvg.innerHTML = "";
     }
+  }
+
+  /**
+   * Real-Time Player Locations with Player Colors!
+   * Shows every teammate's mini Among Us bean character moving on the map live!
+   */
+  renderPlayers(players = [], currentUserId = null) {
+    if (!this.playersContainer) return;
+    this.playersContainer.innerHTML = "";
+
+    players.forEach((player) => {
+      if (!player) return;
+      const coords = player.location || { x: 46.5, y: 41.0 };
+      const isMe = player.playerId === currentUserId;
+      const colorHex = player.color || "#38fedc";
+
+      const playerMarker = document.createElement("div");
+      playerMarker.className = `player-avatar-marker ${isMe ? 'player-avatar-me' : ''}`;
+      playerMarker.style.left = `${coords.x}%`;
+      playerMarker.style.top = `${coords.y}%`;
+
+      playerMarker.innerHTML = `
+        <div class="player-avatar-bean">
+          <svg viewBox="0 0 40 50" class="player-mini-bean">
+            <!-- Backpack -->
+            <rect x="2" y="16" width="7" height="20" rx="3" fill="#0f172a" stroke="#ffffff" stroke-width="2"/>
+            <!-- Body filled with player's color -->
+            <path d="M 12 10 C 12 4, 34 4, 34 10 L 34 38 C 34 44, 30 46, 26 46 L 24 46 C 21 46, 21 42, 21 38 L 21 38 C 21 42, 19 46, 16 46 L 14 46 C 10 46, 12 40, 12 36 Z" 
+                  fill="${colorHex}" stroke="#ffffff" stroke-width="2.5" />
+            <!-- Visor -->
+            <ellipse cx="26" cy="18" rx="8" ry="5.5" fill="#38fedc" stroke="#ffffff" stroke-width="1.5"/>
+            <ellipse cx="28" cy="16" rx="4" ry="2" fill="#ffffff" opacity="0.6"/>
+          </svg>
+          ${isMe ? '<div class="player-avatar-pulse"></div>' : ''}
+        </div>
+        <div class="player-avatar-nametag" style="border-color:${colorHex}">
+          ${isMe ? '★ ' : ''}${player.name || 'Crewmate'}
+        </div>
+      `;
+
+      this.playersContainer.appendChild(playerMarker);
+    });
   }
 }

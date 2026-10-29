@@ -7,21 +7,25 @@
   <title>Campus Radar — PDEU Among Us</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/map.css">
+  
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <!-- Bundled pure JS QR Code scanner engine -->
+  <script src="js/vendor/jsqr.js"></script>
 </head>
 <body class="map-page-body">
 
-  <!-- Compact mobile header -->
+  <!-- Mobile Header -->
   <header class="app-header">
     <div class="header-left">
       <span class="header-icon">📡</span>
       <div>
-        <div class="header-title" style="font-size:14px;">CAMPUS RADAR</div>
-        <div id="player-tag" class="header-sub"></div>
+        <div class="header-title" style="font-size:14px;">PDEU RADAR</div>
+        <div id="player-tag" class="header-sub">Connecting...</div>
       </div>
     </div>
     <div class="header-right">
+      <button id="btn-gps-toggle" class="btn-icon" onclick="recenterGPS()" title="My Location">📍</button>
       <button id="btn-daylight" class="btn-icon" onclick="toggleDaylight()" title="Contrast">☀️</button>
       <button id="btn-snd" class="btn-icon" onclick="toggleSnd()" title="Sound">🔊</button>
     </div>
@@ -36,35 +40,51 @@
     <span id="progress-text" class="progress-count">0/6</span>
   </div>
 
-  <!-- Map Viewport (fills remaining space) -->
+  <!-- Map Viewport -->
   <div id="map-container"></div>
 
-  <!-- Floating HUD Card (Current Objective) -->
+  <!-- Floating HUD Card (Current Objective Only) -->
   <div class="map-hud" id="hud">
     <div class="hud-top">
       <span id="hud-dot" class="hud-dot"></span>
-      <span id="hud-label" class="hud-label">STATION 1 OF 6</span>
+      <span id="hud-label" class="hud-label">TARGET STATION 1 OF 6</span>
     </div>
-    <div id="hud-name" class="hud-name">Loading...</div>
-    <div id="hud-clue" class="hud-clue"></div>
+    <div id="hud-name" class="hud-name">OSAIL Gazebo</div>
+    <div id="hud-clue" class="hud-clue">Head to the central Osail Gazebo pavilion beside the Cricket Ground.</div>
   </div>
 
   <!-- Floating Scan QR Button (Bottom Center) -->
   <button class="fab-scan" id="btn-scan-qr" onclick="openScanner()">
-    <span style="font-size:24px;">📷</span>
+    <span style="font-size:22px;">📷</span>
     <span>SCAN QR</span>
   </button>
 
-  <!-- Simple Manual URL Entry Modal -->
-  <div id="scanner-modal" class="modal-overlay hidden">
-    <div class="modal-card">
-      <h3 class="modal-title">📷 Scan Station QR</h3>
-      <p class="modal-desc">Use your phone camera to scan the QR code, or paste the link below:</p>
-      <input type="url" id="manual-url" class="input" placeholder="Paste scanned URL here..." autocomplete="off">
-      <div class="modal-actions">
-        <button class="btn-primary" onclick="submitManualUrl()">Open</button>
-        <button class="btn-ghost" onclick="closeScanner()">Cancel</button>
+  <!-- IN-WEBSITE LIVE CAMERA QR SCANNER OVERLAY -->
+  <div id="scanner-view" class="scanner-overlay hidden">
+    <!-- Top Bar with Close and Torch -->
+    <div class="scanner-top-bar">
+      <span style="font-family:var(--font-display); font-size:14px; color:var(--cyan);">SCAN STATION QR</span>
+      <div style="display:flex; gap:8px;">
+        <button id="btn-toggle-torch" class="btn-icon hidden" onclick="toggleTorch()" style="background:rgba(0,0,0,0.6);">⚡</button>
+        <button class="btn-icon" onclick="closeScanner()" style="background:rgba(0,0,0,0.6);">✕</button>
       </div>
+    </div>
+
+    <!-- Live Video Stream -->
+    <video id="scanner-video" class="scanner-video-feed" playsinline autoplay muted></video>
+    <canvas id="scanner-canvas" style="display:none;"></canvas>
+
+    <!-- Sci-fi Among Us Visor Scanner Frame -->
+    <div class="scanner-frame-box">
+      <div class="scanner-corner scanner-tl"></div>
+      <div class="scanner-corner scanner-tr"></div>
+      <div class="scanner-corner scanner-bl"></div>
+      <div class="scanner-corner scanner-br"></div>
+      <div class="scanner-laser"></div>
+    </div>
+
+    <div class="scanner-bottom-hint">
+      Point camera at physical Station QR code
     </div>
   </div>
 
@@ -72,7 +92,7 @@
     import { firebaseService } from './js/firebase-service.js';
     import { session, displayMode, showToast, vibrate } from './js/app.js';
     import { sound } from './js/sound.js';
-    import { LOCATIONS } from './js/config.js';
+    import { LOCATIONS, gpsToCampusCoords } from './js/config.js';
     import { CampusMapEngine } from './js/map-engine.js';
     import { sabotageEngine } from './js/sabotage-engine.js';
     import { rogueAIEngine } from './js/rogue-ai-engine.js';
@@ -82,19 +102,65 @@
     const user = session.requireAuth();
     if (!user) { window.location.href = "index.html"; }
 
-    // Player tag
+    // Display Player Tag with Color
     const roleIcon = user.role === 'impostor' ? '😈' : user.role === 'survivor' ? '⚡' : '🧑‍🚀';
-    document.getElementById('player-tag').textContent = `${user.teamId} · ${user.playerName} ${roleIcon}`;
+    document.getElementById('player-tag').innerHTML = `
+      <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${user.color || '#38fedc'}; margin-right:4px;"></span>
+      ${user.teamId} · ${user.playerName} ${roleIcon}
+    `;
 
-    // Init map
+    // Initialize Map Engine
     const mapEngine = new CampusMapEngine(document.getElementById('map-container'), {
-      locations: LOCATIONS,
-      showNavigation: false
+      locations: LOCATIONS
     });
 
-    // Real-time subscription
+    let currentTeamData = null;
+    let myLastKnownCoords = { x: 46.5, y: 41.0 };
+
+    // REAL-TIME GPS TRACKING
+    function startGPSTracking() {
+      if (!navigator.geolocation) {
+        console.warn("Geolocation not supported by device.");
+        return;
+      }
+
+      navigator.geolocation.watchPosition(
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          const campusCoords = gpsToCampusCoords(lat, lng);
+          myLastKnownCoords = campusCoords;
+
+          // Broadcast to Firestore (throttled)
+          firebaseService.updatePlayerLocation(user.teamId, user.playerId, {
+            ...campusCoords,
+            lat,
+            lng
+          });
+        },
+        (err) => {
+          console.warn("GPS tracking warning:", err.message);
+        },
+        {
+          enableHighAccuracy: true,
+          maximumAge: 3000,
+          timeout: 10000
+        }
+      );
+    }
+    startGPSTracking();
+
+    window.recenterGPS = () => {
+      sound.click();
+      vibrate([40]);
+      mapEngine.resetView();
+      showToast("Centered Campus Radar", "info");
+    };
+
+    // Real-Time Firestore Team Updates
     let unsub = firebaseService.subscribeTeam(user.teamId, (team) => {
       if (!team) return;
+      currentTeamData = team;
 
       sabotageEngine.init(team, user);
       sabotageEngine.handleTeamUpdate(team);
@@ -103,7 +169,7 @@
 
       const idx = team.currentLocationIndex || 1;
 
-      // Redirect to finish if all done
+      // Redirect to finish if all 6 stations completed
       if (idx > LOCATIONS.length || team.finishTime) {
         window.location.href = "finish.html";
         return;
@@ -114,16 +180,20 @@
       document.getElementById('progress-fill').style.width = `${Math.round((done / LOCATIONS.length) * 100)}%`;
       document.getElementById('progress-text').textContent = `${done}/${LOCATIONS.length}`;
 
-      // Map Scramble check
+      // Sabotage Map Scramble check
       const scr = team.sabotageState?.mapScramble;
       const isScrambled = scr?.active && scr?.expiresAt > Date.now();
 
+      // Update Map Visuals (Hides future stations, renders live colored player beans)
       mapEngine.updateState({
         currentIndex: idx,
-        scrambleState: isScrambled ? scr : null
+        scrambleState: isScrambled ? scr : null,
+        locations: LOCATIONS,
+        players: team.players || [],
+        currentUserId: user.playerId
       });
 
-      // HUD
+      // Update HUD Info
       const hud = document.getElementById('hud');
       const dot = document.getElementById('hud-dot');
       const label = document.getElementById('hud-label');
@@ -132,17 +202,18 @@
 
       if (isScrambled) {
         const fake = LOCATIONS.find(l => l.id === scr.fakeLocationId) || LOCATIONS[0];
-        label.textContent = '⚠ RADAR ANOMALY';
-        label.style.color = '#f17d0e';
-        dot.style.background = '#f17d0e';
-        name.textContent = 'Navigation scrambled';
-        clue.textContent = 'Use the answer from your last puzzle to find the next location.';
+        label.textContent = '⚠ RADAR SCRAMBLED';
+        label.style.color = '#ef7d0e';
+        dot.style.background = '#ef7d0e';
+        name.textContent = fake.name;
+        clue.textContent = 'Interference detected! Radar signal fluctuating.';
       } else {
-        label.textContent = `STATION ${idx} OF ${LOCATIONS.length}`;
-        label.style.color = '';
-        dot.style.background = '';
-        name.textContent = 'Find the next station';
-        clue.textContent = 'Solve the puzzle at the current station to reveal where to go next.';
+        const loc = LOCATIONS.find(l => l.order === idx) || LOCATIONS[0];
+        label.textContent = `TARGET STATION ${idx} OF ${LOCATIONS.length}`;
+        label.style.color = 'var(--cyan)';
+        dot.style.background = 'var(--cyan)';
+        name.textContent = loc.name;
+        clue.textContent = loc.clue;
       }
     });
 
@@ -150,23 +221,156 @@
     window.toggleDaylight = () => { displayMode.toggle(); };
     window.toggleSnd = () => {
       const m = sound.toggleMute();
-      document.getElementById('btn-snd').textContent = m ? '🔇' : '🔊';
+      document.getElementById("btn-snd").textContent = m ? "🔇" : "🔊";
     };
-    if (sound.getMuted()) document.getElementById('btn-snd').textContent = '🔇';
+    if (sound.getMuted()) document.getElementById("btn-snd").textContent = "🔇";
 
-    window.openScanner = () => {
+    // ==========================================
+    // LIVE IN-WEBSITE CAMERA QR SCANNER ENGINE
+    // ==========================================
+    let cameraStream = null;
+    let scanAnimationId = null;
+    let videoTrack = null;
+    let nativeDetector = null;
+
+    if ('BarcodeDetector' in window) {
+      try {
+        nativeDetector = new BarcodeDetector({ formats: ['qr_code'] });
+      } catch (e) {
+        nativeDetector = null;
+      }
+    }
+
+    const scannerView = document.getElementById('scanner-view');
+    const video = document.getElementById('scanner-video');
+    const canvas = document.getElementById('scanner-canvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+    window.openScanner = async () => {
       sound.click();
-      document.getElementById('scanner-modal').classList.remove('hidden');
-    };
-    window.closeScanner = () => {
-      document.getElementById('scanner-modal').classList.add('hidden');
-    };
-    window.submitManualUrl = () => {
-      const url = document.getElementById('manual-url').value.trim();
-      if (url) window.location.href = url;
+      vibrate([40]);
+
+      try {
+        scannerView.classList.remove('hidden');
+
+        // Request back-facing camera
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: "environment" },
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          },
+          audio: false
+        });
+
+        video.srcObject = cameraStream;
+        await video.play();
+
+        // Check torch support
+        videoTrack = cameraStream.getVideoTracks()[0];
+        const caps = videoTrack.getCapabilities ? videoTrack.getCapabilities() : {};
+        if (caps.torch) {
+          document.getElementById('btn-toggle-torch').classList.remove('hidden');
+        }
+
+        // Start scanning frames
+        startScanningLoop();
+      } catch (err) {
+        console.error("Camera access error:", err);
+        showToast("Camera error: " + (err.message || "Permission denied"), "error");
+        closeScanner();
+      }
     };
 
-    window.addEventListener('beforeunload', () => { if (unsub) unsub(); });
+    window.closeScanner = () => {
+      if (scanAnimationId) cancelAnimationFrame(scanAnimationId);
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(t => t.stop());
+        cameraStream = null;
+      }
+      scannerView.classList.add('hidden');
+    };
+
+    let isTorchOn = false;
+    window.toggleTorch = async () => {
+      if (!videoTrack) return;
+      try {
+        isTorchOn = !isTorchOn;
+        await videoTrack.applyConstraints({ advanced: [{ torch: isTorchOn }] });
+      } catch (e) {}
+    };
+
+    function startScanningLoop() {
+      let isProcessing = false;
+
+      const scanFrame = async () => {
+        if (!cameraStream || video.readyState !== video.HAVE_ENOUGH_DATA) {
+          scanAnimationId = requestAnimationFrame(scanFrame);
+          return;
+        }
+
+        // Native BarcodeDetector (Fastest on Mobile Chrome / iOS 17+)
+        if (nativeDetector && !isProcessing) {
+          isProcessing = true;
+          try {
+            const barcodes = await nativeDetector.detect(video);
+            if (barcodes && barcodes.length > 0) {
+              const codeValue = barcodes[0].rawValue;
+              if (handleQRCodeResult(codeValue)) return;
+            }
+          } catch (e) {}
+          isProcessing = false;
+        }
+
+        // Pure JS Fallback Engine (jsQR)
+        if (window.jsQR && video.videoWidth > 0) {
+          canvas.width = Math.min(640, video.videoWidth);
+          canvas.height = Math.min(480, video.videoHeight);
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+          const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const code = window.jsQR(imgData.data, imgData.width, imgData.height, {
+            inversionAttempts: "dontInvert"
+          });
+
+          if (code && code.data) {
+            if (handleQRCodeResult(code.data)) return;
+          }
+        }
+
+        scanAnimationId = requestAnimationFrame(scanFrame);
+      };
+
+      scanAnimationId = requestAnimationFrame(scanFrame);
+    }
+
+    function handleQRCodeResult(scannedData) {
+      if (!scannedData) return false;
+
+      // Check if QR contains station parameters: loc=... and token=...
+      if (scannedData.includes('loc=') && scannedData.includes('token=')) {
+        sound.success();
+        vibrate([80, 40, 140]);
+        closeScanner();
+
+        // If it's a full URL, navigate directly
+        if (scannedData.startsWith('http://') || scannedData.startsWith('https://')) {
+          window.location.href = scannedData;
+        } else {
+          // If relative or raw query string
+          const query = scannedData.includes('?') ? scannedData.split('?')[1] : scannedData;
+          window.location.href = `scan.html?${query}`;
+        }
+        return true;
+      }
+
+      return false;
+    }
+
+    window.addEventListener('beforeunload', () => {
+      if (unsub) unsub();
+      closeScanner();
+    });
   </script>
 </body>
 </html>

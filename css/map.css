@@ -44,7 +44,7 @@
   border-radius: 12px;
 }
 
-/* SVG Walking Paths */
+/* SVG Walking Paths (Hidden per user specification) */
 .map-paths-svg {
   position: absolute;
   inset: 0;
@@ -52,22 +52,7 @@
   height: 100%;
   pointer-events: none;
   z-index: 10;
-}
-
-.path-line {
-  stroke-width: 3;
-  stroke-linecap: round;
-}
-
-.path-cleared {
-  stroke: var(--green-light);
-  filter: drop-shadow(0 0 6px rgba(80, 239, 57, 0.8));
-}
-
-.path-pending {
-  stroke: var(--dim);
-  stroke-dasharray: 6 6;
-  opacity: 0.7;
+  display: none;
 }
 
 /* Pins Layer */
@@ -80,7 +65,70 @@
   z-index: 20;
 }
 
-/* Among Us Bean Pin Marker (Enlarged for Mobile) */
+/* Real-Time Player Avatars Layer */
+.map-players-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 30;
+}
+
+.player-avatar-marker {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  transition: left 0.35s ease, top 0.35s ease;
+  z-index: 35;
+}
+
+.player-avatar-me {
+  z-index: 45;
+}
+
+.player-avatar-bean {
+  position: relative;
+  width: 32px;
+  height: 40px;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.8));
+}
+
+.player-mini-bean {
+  width: 100%;
+  height: 100%;
+}
+
+.player-avatar-nametag {
+  background: rgba(14, 16, 33, 0.95);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 2px 8px;
+  font-family: var(--font-display);
+  font-size: 10px;
+  color: #ffffff;
+  white-space: nowrap;
+  margin-top: 2px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+.player-avatar-pulse {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 48px;
+  height: 48px;
+  border: 2px solid var(--cyan);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: radar-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+  pointer-events: none;
+}
+
+/* Among Us Bean Pin Marker */
 .amongus-pin {
   position: absolute;
   transform: translate(-50%, -100%);
@@ -90,6 +138,7 @@
   pointer-events: auto;
   cursor: pointer;
   touch-action: manipulation;
+  z-index: 25;
 }
 
 .pin-marker {
@@ -136,11 +185,8 @@
 .pin-active .pin-beacon { display: block; }
 
 .pin-locked {
-  opacity: 0.35;
-  filter: grayscale(0.9);
+  display: none !important; /* HIDE FUTURE STATIONS ENTIRELY */
 }
-.pin-locked .bean-body { fill: var(--dim); }
-.pin-locked .bean-visor { fill: var(--muted); }
 
 .pin-scrambled {
   animation: scramble-jitter 0.25s infinite;
@@ -297,4 +343,87 @@
   color: var(--muted);
   margin-top: 3px;
   line-height: 1.3;
+}
+
+/* LIVE CAMERA SCANNER OVERLAY */
+.scanner-overlay {
+  position: fixed;
+  inset: 0;
+  background: #000000;
+  z-index: 4000;
+  display: flex;
+  flex-direction: column;
+}
+
+.scanner-video-feed {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.scanner-frame-box {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 260px;
+  height: 260px;
+  border: 2px solid rgba(56, 254, 220, 0.6);
+  border-radius: 24px;
+  box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.65);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.scanner-corner {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-color: var(--cyan);
+  border-style: solid;
+}
+.scanner-tl { top: 0; left: 0; border-width: 4px 0 0 4px; border-top-left-radius: 20px; }
+.scanner-tr { top: 0; right: 0; border-width: 4px 4px 0 0; border-top-right-radius: 20px; }
+.scanner-bl { bottom: 0; left: 0; border-width: 0 0 4px 4px; border-bottom-left-radius: 20px; }
+.scanner-br { bottom: 0; right: 0; border-width: 0 4px 4px 0; border-bottom-right-radius: 20px; }
+
+.scanner-laser {
+  position: absolute;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #38fedc, transparent);
+  box-shadow: 0 0 12px #38fedc;
+  animation: laser-bounce 2s ease-in-out infinite alternate;
+}
+
+@keyframes laser-bounce {
+  0% { top: 6%; }
+  100% { top: 94%; }
+}
+
+.scanner-top-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(180deg, rgba(0,0,0,0.8), transparent);
+  z-index: 10;
+}
+
+.scanner-bottom-hint {
+  position: absolute;
+  bottom: 40px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 13px;
+  color: var(--cyan);
+  text-shadow: 0 2px 4px #000;
+  z-index: 10;
 }

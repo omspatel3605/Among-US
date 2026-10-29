@@ -276,8 +276,8 @@
         return;
       }
 
-      // 2. Check correctness
-      const isCorrect = isAnswerCorrect(answer, targetLocation.puzzle?.answer);
+      // 2. Check correctness (supports fuzzy matching and accepted variants)
+      const isCorrect = isAnswerCorrect(answer, targetLocation.puzzle?.answer, targetLocation.acceptedAnswers);
 
       // 3. Fake Reject trap
       const fakeReject = currentTeam.sabotageState?.fakeReject;
@@ -349,12 +349,19 @@
       const nextBtn = document.getElementById("btn-next");
 
       if (isFinal) {
-        desc.innerHTML = "🎉 All 6 PDEU Campus Stations Cleared!<br>Proceeding to Mission Debrief & Voting.";
+        desc.innerHTML = "<span style='font-size:16px; color:var(--yellow); font-weight:700;'>🎉 ALL 6 PDEU STATIONS CLEARED!</span><br><span style='color:var(--muted);'>Proceeding to Mission Debrief & Impostor Accusation.</span>";
         nextBtn.textContent = "FINAL DEBRIEF →";
         nextBtn.onclick = () => window.location.href = "finish.html";
       } else {
-        desc.innerHTML = "Location decoded! Use your answer to find the next station.";
-        nextBtn.textContent = "CONTINUE TO MAP →";
+        const nextLoc = LOCATIONS.find(l => l.order === nextIdx);
+        desc.innerHTML = `
+          <div style="background:var(--bg-panel-light); border:2px solid var(--green-light); border-radius:var(--radius-md); padding:12px; margin-bottom:14px;">
+            <div style="font-size:11px; color:var(--yellow); font-family:var(--font-mono); letter-spacing:1px; margin-bottom:4px;">NEXT DESTINATION UNLOCKED:</div>
+            <div style="font-size:20px; font-weight:800; color:var(--white);">${nextLoc ? nextLoc.name : targetLocation.puzzle?.answer}</div>
+          </div>
+          <span style="font-size:13px; color:var(--muted);">Radar beacon has activated. Head to this location and scan its QR code!</span>
+        `;
+        nextBtn.textContent = "VIEW ON RADAR →";
         nextBtn.onclick = () => window.location.href = "map.html";
       }
     }

@@ -3,7 +3,7 @@
  * Central Game Configuration, Locations, Scoring & Admin Credentials
  */
 
-// Firebase Configuration
+// Firebase Configuration (Live Credentials)
 export const FIREBASE_CONFIG = {
   apiKey: "AIzaSyACNKAgM-0Zojv9S1aOLYuM1iQVJ4nSRSg",
   authDomain: "pdeu-amongus-hunt.firebaseapp.com",
@@ -14,18 +14,16 @@ export const FIREBASE_CONFIG = {
   measurementId: "G-PP03420Q8T"
 };
 
-// Check if using demo/placeholder config
 export const isDemoConfig = () => {
   return !FIREBASE_CONFIG.apiKey || FIREBASE_CONFIG.apiKey.includes("DEMO_REPLACE");
 };
 
-// Organizer / Admin Login Credentials (for walk-up event management)
+// Organizer / Admin Login Credentials
 export const ADMIN_CREDENTIALS = {
   username: "admin",
   password: "pdeu@amongus2026"
 };
 
-// Legacy passcode fallback for quick unlock
 export const ADMIN_PASSCODE = "pdeu2026";
 
 // Scoring Parameters
@@ -34,10 +32,53 @@ export const SCORING = {
   minutePenalty: 1,
   wrongAttemptPenalty: 10,
   sabotagePenalty: 5,
-  fastRecoveryBonus: 20, // bonus per glitch solved within 25 seconds (2-player teams)
-  impostorEscapeBonus: 300, // Impostor gets 300 pts if unvoted
-  impostorCaughtBonus: 100  // Impostor gets 100 pts if caught
+  fastRecoveryBonus: 20,
+  impostorEscapeBonus: 300,
+  impostorCaughtBonus: 100
 };
+
+// 12 Authentic Among Us Crewmate Colors
+export const AMONG_US_COLORS = [
+  { id: 'red', name: 'Red', hex: '#c51111', visor: '#38fedc' },
+  { id: 'blue', name: 'Blue', hex: '#132ed1', visor: '#38fedc' },
+  { id: 'green', name: 'Green', hex: '#117f2d', visor: '#50ef39' },
+  { id: 'pink', name: 'Pink', hex: '#ed54ba', visor: '#ffffff' },
+  { id: 'orange', name: 'Orange', hex: '#ef7d0e', visor: '#f5f558' },
+  { id: 'yellow', name: 'Yellow', hex: '#f5f558', visor: '#ffffff' },
+  { id: 'black', name: 'Black', hex: '#3f474e', visor: '#38fedc' },
+  { id: 'white', name: 'White', hex: '#d6e0f0', visor: '#38fedc' },
+  { id: 'purple', name: 'Purple', hex: '#6b2fbc', visor: '#38fedc' },
+  { id: 'brown', name: 'Brown', hex: '#71491e', visor: '#38fedc' },
+  { id: 'cyan', name: 'Cyan', hex: '#38fedc', visor: '#ffffff' },
+  { id: 'lime', name: 'Lime', hex: '#50ef39', visor: '#ffffff' }
+];
+
+// Approximate PDEU Campus GPS Bounding Box (for live real-time GPS map positioning)
+export const CAMPUS_GPS_BOUNDS = {
+  north: 23.1585,
+  south: 23.1520,
+  west: 72.6640,
+  east: 72.6720
+};
+
+// Convert device GPS (lat, lng) to percentage coords (x%, y%) on 1024x707 college map
+export function gpsToCampusCoords(lat, lng) {
+  const { north, south, west, east } = CAMPUS_GPS_BOUNDS;
+  
+  // Clamp values inside bounds
+  const clampedLat = Math.max(south, Math.min(north, lat));
+  const clampedLng = Math.max(west, Math.min(east, lng));
+
+  // Inverted Y (North is top = 0%, South is bottom = 100%)
+  const y = ((north - clampedLat) / (north - south)) * 100;
+  // X (West is left = 0%, East is right = 100%)
+  const x = ((clampedLng - west) / (east - west)) * 100;
+
+  return {
+    x: Number(Math.max(4, Math.min(96, x)).toFixed(1)),
+    y: Number(Math.max(4, Math.min(96, y)).toFixed(1))
+  };
+}
 
 // Sabotage Abilities for Impostors (3-4 player teams)
 export const SABOTAGE_CONFIG = {
@@ -60,7 +101,7 @@ export const SABOTAGE_CONFIG = {
   fakeReject: {
     id: "fakeReject",
     name: "Fake Reject",
-    durationSeconds: 0, // Single use until consumed
+    durationSeconds: 0,
     icon: "❌",
     color: "#ef4444",
     summary: "Traps the next puzzle attempt: falsely marks the team's first correct submission as 'INCORRECT' once."
@@ -69,8 +110,7 @@ export const SABOTAGE_CONFIG = {
 
 /**
  * 6 Fixed Sequential PDEU Campus Locations
- * Can be rearranged or extended here.
- * Coordinates are percentage (0-100%) on the campus map canvas.
+ * Puzzles answer reveals the next destination!
  */
 export const LOCATIONS = [
   {
@@ -80,13 +120,16 @@ export const LOCATIONS = [
     shortName: "OSAIL Gazebo",
     coords: { x: 46.5, y: 41.0 },
     token: "OG842X1",
-    clue: "Head to the central Osail Gazebo pavilion beside the Cricket Ground and OSAIL Ground.",
+    clue: "Start at Osail Gazebo pavilion beside the Cricket Ground.",
     puzzle: {
-      question: "Decode the next destination: walk east between the academic blocks to the gazebo under the tree grove. Enter its station name.",
+      question: "Search the area around OSAIL Gazebo. A cryptic transmission points to the next sector: Where engineering students gather near the substation, shaded between the academic blocks. Enter the destination name:",
       type: "text",
-      answer: "D Block Gazebo",
-      hint: "The answer is the name of the next gazebo."
+      answer: "D Block",
+      hint: "Head east towards D Block Gazebo (between D Block and C Block)."
     },
+    acceptedAnswers: [
+      "dblock", "d block", "dgazebo", "d gazebo", "d-block", "dbock", "dblockgazebo", "d", "d block gazebo"
+    ],
     decoyPuzzle: {
       question: "Enter the serial number etched onto the electrical conduit beneath the central canopy lamp: [HEX-CODE]",
       type: "text",
@@ -100,13 +143,16 @@ export const LOCATIONS = [
     shortName: "D Gazebo",
     coords: { x: 69.8, y: 60.5 },
     token: "DG519K2",
-    clue: "Head east between D Block and C Block. Locate D Gazebo shaded under the tree grove.",
+    clue: "Navigate east between D Block and C Block. Find D Gazebo.",
     puzzle: {
-      question: "Decode the next destination: find the gazebo inside the inner courtyard near the academic department entrance. Enter its station name.",
+      question: "Decode the beacon at D Block Gazebo: Follow the pathway into the sheltered courtyard of the chemical and petroleum wing. Enter the next destination:",
       type: "text",
-      answer: "C Block Gazebo",
-      hint: "The answer is the name of the next gazebo."
+      answer: "C Block",
+      hint: "The next station is C Block Gazebo in the adjacent courtyard."
     },
+    acceptedAnswers: [
+      "cblock", "c block", "cgazebo", "c gazebo", "c-block", "cbock", "cblockgazebo", "c", "c block gazebo"
+    ],
     decoyPuzzle: {
       question: "Count the total number of red patterned paver stones forming the ramp entry.",
       type: "number",
@@ -120,13 +166,16 @@ export const LOCATIONS = [
     shortName: "C Gazebo",
     coords: { x: 74.8, y: 63.8 },
     token: "CG773M3",
-    clue: "Walk into the inner courtyard of C Block. Spot C Gazebo near the academic department entrance.",
+    clue: "Walk into the inner courtyard of C Block to find C Gazebo.",
     puzzle: {
-      question: "Decode the next destination: travel northeast to the open curved amphitheater seating area outside A Block. Enter its station name.",
+      question: "Signal intercepted at C Gazebo! The coordinates direct you northeast to the main academic atrium where curved amphitheater benches surround the plaza. Enter the destination:",
       type: "text",
-      answer: "A Block Seating",
-      hint: "The answer is the name of the next location."
+      answer: "A Seating",
+      hint: "Look for the open curved seating outside A Block."
     },
+    acceptedAnswers: [
+      "aseating", "a seating", "ablock", "a block", "ablockseating", "a-seating", "a-block", "a", "a seating area"
+    ],
     decoyPuzzle: {
       question: "Transcribe the Roman numerals on the concrete base foundation stone.",
       type: "text",
@@ -140,13 +189,16 @@ export const LOCATIONS = [
     shortName: "A Seating",
     coords: { x: 84.5, y: 25.5 },
     token: "AS312P4",
-    clue: "Proceed northeast towards A Block. Locate the open curved amphitheater seating area (A seating).",
+    clue: "Proceed northeast towards the open curved amphitheater outside A Block.",
     puzzle: {
-      question: "Decode the next destination: head to the northern quad near the dining hall and find the canopy float. Enter its station name.",
+      question: "Decrypted from A Block Seating: Head northwest across the central lawns to the student residential and dining zone where the large canopy float stands. Enter the destination:",
       type: "text",
-      answer: "Ness 1 Float (Mess)",
-      hint: "The answer is the name of the next location."
+      answer: "Mess",
+      hint: "Proceed towards the Mess / Ness 1 residence zone."
     },
+    acceptedAnswers: [
+      "mess", "ness", "ness1", "ness 1", "ness1float", "ness float", "mess pavilion", "dining", "ness (mess)", "ness1 float"
+    ],
     decoyPuzzle: {
       question: "What room number is directly visible through the first ground-floor faculty office window?",
       type: "text",
@@ -162,11 +214,14 @@ export const LOCATIONS = [
     token: "NF904R5",
     clue: "Navigate to the northern quad near the dining hall. Spot the Mess / Ness 1 canopy structure.",
     puzzle: {
-      question: "Decode the final destination: go south of D Block to the grand stage complex. Enter its station name.",
+      question: "Emergency broadcast decoded at the Mess: The final ship extraction zone is located south of D Block at the grand amphitheater stage. Enter the final destination:",
       type: "text",
-      answer: "Gemini Stage (Germi)",
-      hint: "The answer is the name of the final stage."
+      answer: "Gemini Stage",
+      hint: "The grand stage located south of D Block (labeled Gemini Stage / Germi)."
     },
+    acceptedAnswers: [
+      "gemini", "geministage", "gemini stage", "germi", "germistage", "germi stage", "stage", "gemini amphitheater"
+    ],
     decoyPuzzle: {
       question: "Count the total number of braided stainless steel suspension cables in the canopy float.",
       type: "number",
@@ -182,11 +237,14 @@ export const LOCATIONS = [
     token: "GS661Z6",
     clue: "Final Station! Reach the grand Gemini Stage / Germi complex directly south of D Block.",
     puzzle: {
-      question: "This is the final station. Enter FINISH to complete the campus route.",
+      question: "FINAL EMERGENCY TERMINAL AT GEMINI STAGE: Input the master extraction override code to clear the final station and transmit debrief:",
       type: "text",
       answer: "FINISH",
-      hint: "There is no next location after the final stage."
+      hint: "Enter FINISH or COMPLETE to conclude your campus run!"
     },
+    acceptedAnswers: [
+      "finish", "complete", "done", "victory", "crew", "amongus", "win", "extracted", "survived"
+    ],
     decoyPuzzle: {
       question: "Input the 6-character emergency broadcast serial code found on the backstage power distribution box.",
       type: "text",
@@ -197,7 +255,7 @@ export const LOCATIONS = [
 
 // Generate 6-letter Among Us style room code (e.g. "SKELDX")
 export function generateRoomCode() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ"; // No I, O to prevent confusion
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ";
   let code = "";
   for (let i = 0; i < 6; i++) {
     code += chars[Math.floor(Math.random() * chars.length)];
@@ -215,12 +273,75 @@ export function getLocationByOrder(order) {
   return LOCATIONS.find(loc => loc.order === order) || null;
 }
 
-// Helper: Normalize answer strings for comparison
-export function isAnswerCorrect(userAnswer, correctAnswer) {
-  if (userAnswer === undefined || userAnswer === null || correctAnswer === undefined || correctAnswer === null) {
-    return false;
+// Clean string for ultra-flexible comparison (removes all spaces, punctuation, lowercase)
+export function normalizeAnswer(str) {
+  if (str === undefined || str === null) return "";
+  return String(str)
+    .toLowerCase()
+    .replace(/[\s\-_.,'"!?:;()/\\]/g, "")
+    .trim();
+}
+
+// Compute Levenshtein distance for fuzzy typo tolerance (e.g. "dbock" vs "dblock")
+function levenshteinDistance(a, b) {
+  if (a.length === 0) return b.length;
+  if (b.length === 0) return a.length;
+  const matrix = [];
+  for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+  for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1, // substitution
+          matrix[i][j - 1] + 1,     // insertion
+          matrix[i - 1][j] + 1      // deletion
+        );
+      }
+    }
   }
-  const cleanUser = String(userAnswer).trim().toLowerCase();
-  const cleanTarget = String(correctAnswer).trim().toLowerCase();
-  return cleanUser === cleanTarget;
+  return matrix[b.length][a.length];
+}
+
+/**
+ * Super forgiving answer checker:
+ * Accepts uppercase, lowercase, spaces, hyphens, slashes, typos (e.g. "D Block", "dblock", "dbock", "d block")
+ */
+export function isAnswerCorrect(userAnswer, targetAnswer, acceptedList = []) {
+  if (!userAnswer) return false;
+  
+  const cleanUser = normalizeAnswer(userAnswer);
+  if (!cleanUser) return false;
+
+  const targetsToCheck = [];
+  if (targetAnswer) targetsToCheck.push(normalizeAnswer(targetAnswer));
+  if (Array.isArray(acceptedList)) {
+    acceptedList.forEach(a => {
+      const c = normalizeAnswer(a);
+      if (c && !targetsToCheck.includes(c)) targetsToCheck.push(c);
+    });
+  }
+
+  // 1. Direct exact match
+  if (targetsToCheck.includes(cleanUser)) return true;
+
+  // 2. Substring containment match (e.g. user typed "the d block gazebo" or "cblock")
+  for (const t of targetsToCheck) {
+    if (cleanUser === t) return true;
+    if (t.length >= 3 && cleanUser.includes(t)) return true;
+    if (cleanUser.length >= 4 && t.includes(cleanUser)) return true;
+    
+    // 3. Typo / Levenshtein tolerance:
+    // If length >= 4, allow 1 edit (e.g. "dbock" vs "dblock")
+    if (t.length >= 4 && Math.abs(cleanUser.length - t.length) <= 1) {
+      if (levenshteinDistance(cleanUser, t) <= 1) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
