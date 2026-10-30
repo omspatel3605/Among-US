@@ -221,13 +221,13 @@
     // 2. Real-Time WebSocket Firestore Subscription
     let unsub = firebaseService.subscribeTeam(user.teamId, applyTeamState);
 
-    // 3. High-speed 2s Polling Backup (ensures instant state even if phone screen turns off/on)
+    // 3. High-speed 1.2s Polling Backup (ensures instant state even if phone screen turns off/on)
     let mapPollTimer = setInterval(async () => {
       try {
         const team = await firebaseService.getTeam(user.teamId);
         if (team) applyTeamState(team);
       } catch (e) {}
-    }, 2000);
+    }, 1200);
 
     // Controls
     window.toggleDaylight = () => { displayMode.toggle(); };
@@ -364,12 +364,18 @@
         vibrate([80, 40, 140]);
         closeScanner();
 
-        if (scannedData.startsWith('http://') || scannedData.startsWith('https://')) {
-          window.location.href = scannedData;
-        } else {
-          const query = scannedData.includes('?') ? scannedData.split('?')[1] : scannedData;
-          window.location.href = `scan.html?${query}`;
-        }
+        try {
+          const urlObj = new URL(scannedData, window.location.href);
+          const locParam = urlObj.searchParams.get('loc');
+          const tokenParam = urlObj.searchParams.get('token');
+          if (locParam && tokenParam) {
+            window.location.href = `scan.html?loc=${encodeURIComponent(locParam)}&token=${encodeURIComponent(tokenParam)}`;
+            return true;
+          }
+        } catch (e) {}
+
+        const query = scannedData.includes('?') ? scannedData.split('?')[1] : scannedData;
+        window.location.href = `scan.html?${query}`;
         return true;
       }
 

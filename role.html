@@ -93,9 +93,13 @@
       // Background check in case role needs silent refresh
       firebaseService.getTeam(user.teamId).then(team => {
         if (team && team.players) {
-          const me = team.players.find(p => p.playerId === user.playerId);
+          const me = team.players.find(p => 
+            p.playerId === user.playerId || 
+            (user.playerName && p.name && p.name.trim().toLowerCase() === user.playerName.trim().toLowerCase())
+          );
           if (me && me.role && me.role !== user.role) {
             user.role = me.role;
+            user.playerId = me.playerId;
             user.color = me.color || user.color;
             session.set(user);
             renderRole(me.role, team.maxSize || team.size, me.color);

@@ -427,14 +427,14 @@
       if (unsubscribe) unsubscribe();
       unsubscribe = firebaseService.subscribeTeam(teamId, handleLobbyTeamUpdate);
 
-      // 2. High-speed 1.2s polling backup (bypasses any mobile/campus Wi-Fi socket delay)
+      // 2. Ultra high-speed 800ms polling backup (bypasses any mobile/campus Wi-Fi socket delay)
       if (lobbyPollTimer) clearInterval(lobbyPollTimer);
       lobbyPollTimer = setInterval(async () => {
         try {
           const team = await firebaseService.getTeam(teamId);
           if (team) handleLobbyTeamUpdate(team);
         } catch (e) {}
-      }, 1200);
+      }, 800);
 
       // 3. Immediate instant fetch on lobby enter
       firebaseService.getTeam(teamId).then(handleLobbyTeamUpdate).catch(() => {});
@@ -502,9 +502,13 @@
 
       try {
         const updates = await firebaseService.startGame(sess.teamId);
-        const me = (updates.players || []).find(p => p.playerId === sess.playerId);
+        const me = (updates.players || []).find(p => 
+          p.playerId === sess.playerId || 
+          (sess.playerName && p.name && p.name.trim().toLowerCase() === sess.playerName.trim().toLowerCase())
+        );
         if (me && me.role) {
           sess.role = me.role;
+          sess.playerId = me.playerId;
           sess.color = me.color || sess.color;
           session.set(sess);
         }

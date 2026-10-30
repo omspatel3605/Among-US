@@ -457,7 +457,9 @@
       function handleTeamState(team) {
         if (!team) return;
         // Verify host status in case session lost isHost flag
-        const actualHost = isHost || team.hostPlayerId === user.playerId;
+        const hostPlayer = (team.players || []).find(p => p.playerId === team.hostPlayerId);
+        const isHostByName = hostPlayer && user.playerName && hostPlayer.name.trim().toLowerCase() === user.playerName.trim().toLowerCase();
+        const actualHost = isHost || team.hostPlayerId === user.playerId || isHostByName;
         if (actualHost && hostArea.classList.contains('hidden')) {
           hostArea.classList.remove('hidden');
           guestArea.classList.add('hidden');
@@ -473,13 +475,13 @@
       // 1. Immediate fetch
       firebaseService.getTeam(user.teamId).then(handleTeamState).catch(() => {});
 
-      // 2. High-speed 1.2s polling backup
+      // 2. High-speed 800ms polling backup
       const briefingPollTimer = setInterval(async () => {
         try {
           const team = await firebaseService.getTeam(user.teamId);
           handleTeamState(team);
         } catch (e) {}
-      }, 1200);
+      }, 800);
 
       // 3. WebSocket subscription
       firebaseService.subscribeTeam(user.teamId, handleTeamState);
