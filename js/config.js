@@ -331,33 +331,40 @@ export function normalizeAnswer(str) {
     .trim();
 }
 
-// Compute Levenshtein distance for fuzzy typo tolerance (e.g. "dbock" vs "dblock")
+// Compute Damerau-Levenshtein distance for fuzzy typo & adjacent swap tolerance
 function levenshteinDistance(a, b) {
   if (a.length === 0) return b.length;
   if (b.length === 0) return a.length;
-  const matrix = [];
-  for (let i = 0; i <= b.length; i++) matrix[i] = [i];
-  for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+  const d = [];
+  for (let i = 0; i <= a.length; i++) {
+    d[i] = [i];
+  }
+  for (let j = 0; j <= b.length; j++) {
+    d[0][j] = j;
+  }
 
-  for (let i = 1; i <= b.length; i++) {
-    for (let j = 1; j <= a.length; j++) {
-      if (b.charAt(i - 1) === a.charAt(j - 1)) {
-        matrix[i][j] = matrix[i - 1][j - 1];
-      } else {
-        matrix[i][j] = Math.min(
-          matrix[i - 1][j - 1] + 1, // substitution
-          matrix[i][j - 1] + 1,     // insertion
-          matrix[i - 1][j] + 1      // deletion
-        );
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a.charAt(i - 1) === b.charAt(j - 1) ? 0 : 1;
+      d[i][j] = Math.min(
+        d[i - 1][j] + 1,      // deletion
+        d[i][j - 1] + 1,      // insertion
+        d[i - 1][j - 1] + cost // substitution
+      );
+      // Adjacent letter transposition (e.g. "evolutoin" -> "evolution")
+      if (i > 1 && j > 1 && a.charAt(i - 1) === b.charAt(j - 2) && a.charAt(i - 2) === b.charAt(j - 1)) {
+        d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
       }
     }
   }
-  return matrix[b.length][a.length];
+  return d[a.length][b.length];
 }
 
 /**
- * Super forgiving answer checker:
- * Accepts uppercase, lowercase, spaces, hyphens, slashes, typos (e.g. "D Block", "dblock", "dbock")
+ * Robust, production-grade answer checker:
+ * - Strict exact match for numeric codes (Sudoku & KenKen)
+ * - Typo & swap tolerance (Damerau-Levenshtein <= 1) for text words >= 5 chars
+ * - Flexible casing, spacing, and common prefixes ("the", "an", "a")
  */
 export function isAnswerCorrect(userAnswer, targetAnswer, acceptedList = []) {
   if (!userAnswer) return false;
@@ -377,15 +384,20 @@ export function isAnswerCorrect(userAnswer, targetAnswer, acceptedList = []) {
   // 1. Direct exact match
   if (targetsToCheck.includes(cleanUser)) return true;
 
-  // 2. Substring containment match (e.g. user typed "the d block gazebo" or "cblock")
+  // 2. Strict exact match for numeric digit sequences (Sudoku & KenKen)
+  const isNumericCode = targetsToCheck.every(t => /^\d+$/.test(t));
+  if (isNumericCode) {
+    return targetsToCheck.includes(cleanUser);
+  }
+
+  // 3. For text answers:
   for (const t of targetsToCheck) {
     if (cleanUser === t) return true;
-    if (t.length >= 3 && cleanUser.includes(t)) return true;
-    if (cleanUser.length >= 4 && t.includes(cleanUser)) return true;
+    // Prefix containment (e.g. "the evolution", "an echo", "a conspiracy")
+    if (cleanUser === "the" + t || cleanUser === "an" + t || cleanUser === "a" + t) return true;
     
-    // 3. Typo / Levenshtein tolerance:
-    // If length >= 4, allow 1 edit (e.g. "dbock" vs "dblock")
-    if (t.length >= 4 && Math.abs(cleanUser.length - t.length) <= 1) {
+    // Typo & adjacent swap tolerance for words with length >= 5: allow 1 edit distance
+    if (t.length >= 5 && Math.abs(cleanUser.length - t.length) <= 1) {
       if (levenshteinDistance(cleanUser, t) <= 1) {
         return true;
       }
