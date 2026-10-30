@@ -762,10 +762,10 @@
         const nextLoc = LOCATIONS.find(l => l.order === nextIdx);
         desc.innerHTML = `
           <div style="background:var(--bg-panel-light); border:2px solid var(--green-light); border-radius:var(--radius-md); padding:12px; margin-bottom:14px;">
-            <div style="font-size:11px; color:var(--yellow); font-family:var(--font-mono); letter-spacing:1px; margin-bottom:4px;">NEXT DESTINATION UNLOCKED:</div>
-            <div style="font-size:20px; font-weight:800; color:var(--white);">${nextLoc ? nextLoc.name : targetLocation.puzzle?.answer}</div>
+            <div style="font-size:11px; color:var(--yellow); font-family:var(--font-mono); letter-spacing:1px; margin-bottom:4px;">NEXT OBJECTIVE UNLOCKED:</div>
+            <div style="font-size:20px; font-weight:800; color:var(--cyan);">SECTOR ${nextIdx} BEACON ACTIVE</div>
           </div>
-          <span style="font-size:13px; color:var(--muted);">Radar beacon has activated. Head to this location and scan its QR code!</span>
+          <span style="font-size:13px; color:var(--muted);">Radar signal illuminated on your map. Open Campus Radar to track and navigate to the waypoint!</span>
         `;
         nextBtn.textContent = "VIEW ON RADAR →";
         nextBtn.onclick = () => window.location.href = "map.html";

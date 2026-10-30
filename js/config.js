@@ -102,7 +102,7 @@ export const LOCATIONS = [
     shortName: "OSAIL Gazebo",
     coords: { x: 49.5, y: 48.0 },
     token: "OG842X1",
-    clue: "Start at the central OSAIL Gazebo pavilion beside the Cricket Ground.",
+    clue: "Commence expedition at the central pavilion beside the cricket ground.",
     puzzle: {
       type: "crossword-3x3",
       category: "Mini Crossword (3×3)",
@@ -136,7 +136,7 @@ export const LOCATIONS = [
     shortName: "D Gazebo",
     coords: { x: 74.5, y: 64.0 },
     token: "DG519K2",
-    clue: "Navigate east between D Block and C Block to locate D Block Gazebo.",
+    clue: "Signal telemetry detected near the eastern academic corridors.",
     puzzle: {
       type: "caesar-cipher",
       category: "Caesar Cipher (Shift −13)",
@@ -166,7 +166,7 @@ export const LOCATIONS = [
     shortName: "Germi",
     coords: { x: 59.4, y: 76.8 },
     token: "GM388Z3",
-    clue: "Proceed south into the courtyard amphitheater known as Germi.",
+    clue: "Navigate south towards the central outdoor amphitheater sector.",
     puzzle: {
       type: "kenken",
       category: "Mini KenKen (4×4)",
@@ -216,7 +216,7 @@ export const LOCATIONS = [
     shortName: "C Gazebo",
     coords: { x: 80.7, y: 72.0 },
     token: "CG773M4",
-    clue: "Walk into the sheltered courtyard plaza of C Block to reach C Block Gazebo.",
+    clue: "Signal leads into a sheltered courtyard plaza between research wings.",
     puzzle: {
       type: "riddle",
       category: "Logic Riddle",
@@ -240,7 +240,7 @@ export const LOCATIONS = [
     shortName: "A Seating",
     coords: { x: 92.5, y: 32.3 },
     token: "AS312P5",
-    clue: "Head northeast to the curved open-air amphitheater benches outside A Block.",
+    clue: "Head northeast to the curved open-air amphitheater benches.",
     puzzle: {
       type: "sudoku",
       category: "Mini Sudoku (4×4)",
@@ -281,7 +281,7 @@ export const LOCATIONS = [
     shortName: "Mess 1 Floor",
     coords: { x: 51.0, y: 27.1 },
     token: "MF904R6",
-    clue: "Final Station! Reach the Mess & Cafeteria (1st Floor dining hall).",
+    clue: "Final Station! Reach the campus dining hall complex (1st Floor).",
     puzzle: {
       type: "anagram",
       category: "Final Anagram",

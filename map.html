@@ -191,15 +191,15 @@
         label.style.color = '#ef7d0e';
         dot.style.background = '#ef7d0e';
         dot.style.boxShadow = '0 0 10px #ef7d0e';
-        name.textContent = fake.name;
-        clue.textContent = 'Radar interference detected! Target beacon fluctuating.';
+        name.textContent = `TARGET: SECTOR ${fake.order}`;
+        clue.textContent = fake.clue || 'Interference detected! Follow the beacon signal on your radar.';
       } else {
         const loc = LOCATIONS.find(l => l.order === idx) || LOCATIONS[0];
-        label.textContent = `TARGET STATION ${idx} OF ${LOCATIONS.length}`;
+        label.textContent = `ACTIVE OBJECTIVE — ${idx} OF ${LOCATIONS.length}`;
         label.style.color = 'var(--cyan)';
         dot.style.background = 'var(--cyan)';
         dot.style.boxShadow = '0 0 10px var(--cyan)';
-        name.textContent = loc.name;
+        name.textContent = `TARGET: SECTOR ${idx}`;
         clue.textContent = loc.clue;
       }
     });
