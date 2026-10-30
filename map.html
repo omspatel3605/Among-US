@@ -156,27 +156,35 @@
       rogueAIEngine.handleTeamUpdate(team);
 
       const idx = team.currentLocationIndex || 1;
+      // Resolve team's personalized location order (fallback: original config order)
+      const locationOrder = team.locationOrder || LOCATIONS.slice().sort((a,b) => a.order - b.order).map(l => l.id);
 
-      // Redirect to finish if all 6 stations completed
-      if (idx > LOCATIONS.length || team.finishTime) {
+      // Redirect to finish if all stations completed
+      if (idx > locationOrder.length || team.finishTime) {
         window.location.href = "finish.html";
         return;
       }
 
       // Progress bar
       const done = idx - 1;
-      document.getElementById('progress-fill').style.width = `${Math.round((done / LOCATIONS.length) * 100)}%`;
-      document.getElementById('progress-text').textContent = `${done}/${LOCATIONS.length}`;
+      document.getElementById('progress-fill').style.width = `${Math.round((done / locationOrder.length) * 100)}%`;
+      document.getElementById('progress-text').textContent = `${done}/${locationOrder.length}`;
+
+      // Resolve active location from the team's ordered array
+      const activeLocId = locationOrder[idx - 1];
+      const activeLoc = LOCATIONS.find(l => l.id === activeLocId) || LOCATIONS[0];
 
       // Sabotage Map Scramble check
       const scr = team.sabotageState?.mapScramble;
       const isScrambled = scr?.active && scr?.expiresAt > Date.now();
 
       // Update Map Visuals (Hides future locked stations, glows active station)
+      // Build an ordered list for the map engine based on this team's route
+      const orderedLocs = locationOrder.map(id => LOCATIONS.find(l => l.id === id)).filter(Boolean);
       mapEngine.updateState({
         currentIndex: idx,
         scrambleState: isScrambled ? scr : null,
-        locations: LOCATIONS
+        locations: orderedLocs
       });
 
       // Update HUD Info
@@ -191,16 +199,15 @@
         label.style.color = '#ef7d0e';
         dot.style.background = '#ef7d0e';
         dot.style.boxShadow = '0 0 10px #ef7d0e';
-        name.textContent = `TARGET: SECTOR ${fake.order}`;
+        name.textContent = `TARGET: SECTOR ${idx}`;
         clue.textContent = fake.clue || 'Interference detected! Follow the beacon signal on your radar.';
       } else {
-        const loc = LOCATIONS.find(l => l.order === idx) || LOCATIONS[0];
-        label.textContent = `ACTIVE OBJECTIVE — ${idx} OF ${LOCATIONS.length}`;
+        label.textContent = `ACTIVE OBJECTIVE — ${idx} OF ${locationOrder.length}`;
         label.style.color = 'var(--cyan)';
         dot.style.background = 'var(--cyan)';
         dot.style.boxShadow = '0 0 10px var(--cyan)';
         name.textContent = `TARGET: SECTOR ${idx}`;
-        clue.textContent = loc.clue;
+        clue.textContent = activeLoc.clue;
       }
     });
 

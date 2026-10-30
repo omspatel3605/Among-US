@@ -394,19 +394,28 @@
         return;
       }
 
-      // Sequence check
+      // Sequence check using team's personalized locationOrder
       const currentIdx = currentTeam.currentLocationIndex || 1;
+      const locationOrder = currentTeam.locationOrder || LOCATIONS.slice().sort((a,b) => a.order - b.order).map(l => l.id);
+      const expectedLocId = locationOrder[currentIdx - 1];
+      const positionalIdx = locationOrder.indexOf(locId) + 1; // 1-based position in this team's route
 
-      if (targetLocation.order < currentIdx) {
-        showError("Already Cleared", `Your crew has already completed '${targetLocation.name}'. Check the radar for your current active target!`);
+      if (positionalIdx === 0) {
+        showError("Unknown Route", "This station is not part of your assigned route. Check your campus radar.");
         return;
       }
 
-      if (targetLocation.order > currentIdx) {
-        const req = allLocs.find(l => l.order === currentIdx);
+      if (positionalIdx < currentIdx) {
+        showError("Already Cleared", `Your crew has already completed this station. Check the radar for your current active target!`);
+        return;
+      }
+
+      if (positionalIdx > currentIdx) {
+        const reqLocId = locationOrder[currentIdx - 1];
+        const req = LOCATIONS.find(l => l.id === reqLocId);
         showError(
           "Sequence Violation",
-          `Access Denied! You are skipping ahead. Your crew must first visit: <strong>${req ? req.name : 'Station ' + currentIdx}</strong>.`
+          `Access Denied! You are skipping ahead. Your crew must first reach: <strong>SECTOR ${currentIdx}</strong>.`
         );
         return;
       }
@@ -440,8 +449,12 @@
       errorCard.classList.add("hidden");
       puzzleCard.classList.remove("hidden");
 
-      document.getElementById("badge-station-num").textContent = `STATION ${targetLocation.order}/${LOCATIONS.length}`;
-      document.getElementById("puzzle-station-name").textContent = targetLocation.name;
+      const locationOrder = currentTeam.locationOrder || LOCATIONS.slice().sort((a,b) => a.order - b.order).map(l => l.id);
+      const positionalIdx = locationOrder.indexOf(targetLocation.id) + 1;
+      const displayStationNum = positionalIdx > 0 ? positionalIdx : (currentTeam.currentLocationIndex || 1);
+
+      document.getElementById("badge-station-num").textContent = `SECTOR ${displayStationNum}/${locationOrder.length}`;
+      document.getElementById("puzzle-station-name").textContent = `Sector ${displayStationNum}`;
       document.getElementById("puzzle-station-clue").textContent = targetLocation.clue;
 
       const locProgress = currentTeam.progress?.[targetLocation.id] || {};
@@ -730,8 +743,10 @@
       sound.success();
       vibrate([50, 30, 80, 40, 120]);
 
-      const nextIdx = targetLocation.order + 1;
-      const isFinal = targetLocation.order >= LOCATIONS.length;
+      const locationOrder = currentTeam.locationOrder || LOCATIONS.slice().sort((a,b) => a.order - b.order).map(l => l.id);
+      const currentPositionalIdx = locationOrder.indexOf(targetLocation.id) + 1;
+      const nextIdx = (currentPositionalIdx > 0 ? currentPositionalIdx : (currentTeam.currentLocationIndex || 1)) + 1;
+      const isFinal = nextIdx > locationOrder.length;
 
       const updates = {
         currentLocationIndex: nextIdx,
@@ -759,7 +774,6 @@
         nextBtn.textContent = "FINAL DEBRIEF →";
         nextBtn.onclick = () => window.location.href = "finish.html";
       } else {
-        const nextLoc = LOCATIONS.find(l => l.order === nextIdx);
         desc.innerHTML = `
           <div style="background:var(--bg-panel-light); border:2px solid var(--green-light); border-radius:var(--radius-md); padding:12px; margin-bottom:14px;">
             <div style="font-size:11px; color:var(--yellow); font-family:var(--font-mono); letter-spacing:1px; margin-bottom:4px;">NEXT OBJECTIVE UNLOCKED:</div>

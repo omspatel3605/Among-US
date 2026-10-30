@@ -219,10 +219,24 @@ class FirebaseService {
       });
     }
 
+    // --- Build randomized location order ---
+    // Shuffle stations 1-5, always pin mess-1-floor (station 6) as the final stop
+    const firstFive = LOCATIONS
+      .filter(l => l.id !== 'mess-1-floor')
+      .map(l => l.id);
+    // Fisher-Yates shuffle
+    for (let i = firstFive.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [firstFive[i], firstFive[j]] = [firstFive[j], firstFive[i]];
+    }
+    const locationOrder = [...firstFive, 'mess-1-floor'];
+
     const updates = {
       status: "playing",
       players: players,
-      startTime: Date.now()
+      startTime: Date.now(),
+      locationOrder: locationOrder,
+      currentLocationIndex: 1
     };
 
     await this.updateTeam(cleanId, updates);

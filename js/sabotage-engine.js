@@ -210,9 +210,11 @@ class SabotageEngine {
   async triggerMapScramble() {
     if (!confirm("Are you sure you want to trigger Map Scramble? The team's radar will point to a misleading pin for 2 minutes.")) return;
 
-    // Pick a wrong location that is NOT the current active one
+    // Pick a wrong location that is NOT the current active one from team's route
     const currentLocIndex = this.currentTeamData?.currentLocationIndex || 1;
-    const wrongOptions = LOCATIONS.filter(loc => loc.order !== currentLocIndex);
+    const locationOrder = this.currentTeamData?.locationOrder || LOCATIONS.map(l => l.id);
+    const activeLocId = locationOrder[currentLocIndex - 1] || locationOrder[0];
+    const wrongOptions = LOCATIONS.filter(loc => loc.id !== activeLocId);
     const fakeLoc = wrongOptions[Math.floor(Math.random() * wrongOptions.length)] || LOCATIONS[0];
 
     const expiresAt = Date.now() + (SABOTAGE_CONFIG.mapScramble.durationSeconds * 1000);
