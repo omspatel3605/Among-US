@@ -47,13 +47,13 @@
       <div class="hud-top">
         <div class="hud-top-left">
           <span id="hud-dot" class="hud-dot"></span>
-          <span id="hud-label" class="hud-label">TARGET STATION 1 OF 6</span>
+          <span id="hud-label" class="hud-label">TARGET SECTOR 1 OF 6</span>
         </div>
         <button id="hud-toggle-btn" class="hud-collapse-btn" onclick="toggleHudCollapse(event)" title="Minimize or Expand">▲</button>
       </div>
       <div class="hud-content" id="hud-content">
-        <div id="hud-name" class="hud-name">OSAIL Gazebo</div>
-        <div id="hud-clue" class="hud-clue">Start at the central OSAIL Gazebo pavilion beside the Cricket Ground.</div>
+        <div id="hud-name" class="hud-name">TARGET: SECTOR 1</div>
+        <div id="hud-clue" class="hud-clue">Initializing campus radar beacon...</div>
       </div>
     </div>
   </div>
@@ -179,8 +179,12 @@
       const isScrambled = scr?.active && scr?.expiresAt > Date.now();
 
       // Update Map Visuals (Hides future locked stations, glows active station)
-      // Build an ordered list for the map engine based on this team's route
-      const orderedLocs = locationOrder.map(id => LOCATIONS.find(l => l.id === id)).filter(Boolean);
+      // Build an ordered list for the map engine where order 1..N matches this team's randomized route
+      const orderedLocs = locationOrder.map((id, index) => {
+        const found = LOCATIONS.find(l => l.id === id);
+        return found ? { ...found, order: index + 1 } : null;
+      }).filter(Boolean);
+
       mapEngine.updateState({
         currentIndex: idx,
         scrambleState: isScrambled ? scr : null,

@@ -156,6 +156,16 @@ class FirebaseService {
       location: { x: 46.5, y: 41.0, updatedAt: Date.now() } // Default to OSAIL Gazebo
     };
 
+    // Generate randomized route immediately upon room creation
+    const firstFive = LOCATIONS
+      .filter(l => l.id !== 'mess-1-floor')
+      .map(l => l.id);
+    for (let i = firstFive.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [firstFive[i], firstFive[j]] = [firstFive[j], firstFive[i]];
+    }
+    const locationOrder = [...firstFive, 'mess-1-floor'];
+
     const teamData = {
       id: cleanId,
       hostPlayerId: hostPlayer.playerId,
@@ -163,6 +173,7 @@ class FirebaseService {
       maxSize: teamSize,
       status: "lobby", // 'lobby' -> 'playing' -> 'finished'
       players: [initialPlayer],
+      locationOrder: locationOrder,
       currentLocationIndex: 1,
       progress: {},
       sabotageState: {
