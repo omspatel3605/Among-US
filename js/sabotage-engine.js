@@ -22,11 +22,24 @@ class SabotageEngine {
   init(teamData, userSession) {
     this.teamId = userSession.teamId;
     this.playerId = userSession.playerId;
-    this.isImpostor = userSession.role === "impostor";
+    // Check both session and current team player array for impostor role
+    const me = (teamData?.players || []).find(p => p.playerId === userSession.playerId);
+    this.isImpostor = (me?.role === "impostor") || (userSession.role === "impostor");
     this.currentTeamData = teamData;
 
     if (this.isImpostor) {
       this.renderImpostorDock();
+      // Ensure only one countdown timer interval is running
+      if (!this._dockInterval) {
+        this._dockInterval = setInterval(() => {
+          const state = this.currentTeamData?.sabotageState || {};
+          const now = Date.now();
+          const anyActive =
+            (state.puzzleSwap?.active && state.puzzleSwap.expiresAt > now) ||
+            (state.mapScramble?.active && state.mapScramble.expiresAt > now);
+          if (anyActive) this.renderImpostorDock();
+        }, 1000);
+      }
     }
   }
 
@@ -150,14 +163,30 @@ class SabotageEngine {
     if (!confirm("Are you sure you want to trigger Puzzle Swap? Teammates will see a decoy puzzle for 90 seconds.")) return;
 
     const expiresAt = Date.now() + (SABOTAGE_CONFIG.puzzleSwap.durationSeconds * 1000);
+    const existingEvents = this.currentTeamData?.sabotageEvents || [];
     const updates = {
-      "sabotageState.puzzleSwap": {
-        active: true,
-        expiresAt: expiresAt,
-        triggeredBy: this.playerId,
-        startedAt: Date.now()
+      sabotageState: {
+        ...(this.currentTeamData?.sabotageState || {}),
+        puzzleSwap: {
+          active: true,
+          expiresAt: expiresAt,
+          triggeredBy: this.playerId,
+          startedAt: Date.now()
+        }
       },
-      "sabotageUsed.puzzleSwap": true
+      sabotageUsed: {
+        ...(this.currentTeamData?.sabotageUsed || {}),
+        puzzleSwap: true
+      },
+      sabotageEvents: [
+        ...existingEvents,
+        {
+          type: "puzzleSwap",
+          triggeredBy: this.playerId,
+          timestamp: Date.now(),
+          durationSeconds: SABOTAGE_CONFIG.puzzleSwap.durationSeconds
+        }
+      ]
     };
 
     try {
@@ -184,19 +213,36 @@ class SabotageEngine {
     // Pick a wrong location that is NOT the current active one
     const currentLocIndex = this.currentTeamData?.currentLocationIndex || 1;
     const wrongOptions = LOCATIONS.filter(loc => loc.order !== currentLocIndex);
-    const fakeLoc = wrongOptions[Math.floor(Math.random() * wrongOptions.length)];
+    const fakeLoc = wrongOptions[Math.floor(Math.random() * wrongOptions.length)] || LOCATIONS[0];
 
     const expiresAt = Date.now() + (SABOTAGE_CONFIG.mapScramble.durationSeconds * 1000);
+    const existingEvents = this.currentTeamData?.sabotageEvents || [];
     const updates = {
-      "sabotageState.mapScramble": {
-        active: true,
-        fakeLocationId: fakeLoc.id,
-        fakeLocationName: fakeLoc.name,
-        expiresAt: expiresAt,
-        triggeredBy: this.playerId,
-        startedAt: Date.now()
+      sabotageState: {
+        ...(this.currentTeamData?.sabotageState || {}),
+        mapScramble: {
+          active: true,
+          fakeLocationId: fakeLoc.id,
+          fakeLocationName: fakeLoc.name,
+          expiresAt: expiresAt,
+          triggeredBy: this.playerId,
+          startedAt: Date.now()
+        }
       },
-      "sabotageUsed.mapScramble": true
+      sabotageUsed: {
+        ...(this.currentTeamData?.sabotageUsed || {}),
+        mapScramble: true
+      },
+      sabotageEvents: [
+        ...existingEvents,
+        {
+          type: "mapScramble",
+          triggeredBy: this.playerId,
+          fakeLocationId: fakeLoc.id,
+          timestamp: Date.now(),
+          durationSeconds: SABOTAGE_CONFIG.mapScramble.durationSeconds
+        }
+      ]
     };
 
     try {
@@ -221,13 +267,28 @@ class SabotageEngine {
   async triggerFakeReject() {
     if (!confirm("Arm Fake Reject trap? The next correct answer teammates submit will be falsely marked INCORRECT once.")) return;
 
+    const existingEvents = this.currentTeamData?.sabotageEvents || [];
     const updates = {
-      "sabotageState.fakeReject": {
-        active: true,
-        triggeredBy: this.playerId,
-        armedAt: Date.now()
+      sabotageState: {
+        ...(this.currentTeamData?.sabotageState || {}),
+        fakeReject: {
+          active: true,
+          triggeredBy: this.playerId,
+          armedAt: Date.now()
+        }
       },
-      "sabotageUsed.fakeReject": true
+      sabotageUsed: {
+        ...(this.currentTeamData?.sabotageUsed || {}),
+        fakeReject: true
+      },
+      sabotageEvents: [
+        ...existingEvents,
+        {
+          type: "fakeReject",
+          triggeredBy: this.playerId,
+          timestamp: Date.now()
+        }
+      ]
     };
 
     try {
@@ -243,6 +304,10 @@ class SabotageEngine {
       showToast("Failed to arm trap: " + err.message, "error");
     }
   }
+    } catch (err) {
+      showToast("Failed to arm trap: " + err.message, "error");
+    }
+  }
 
   /**
    * Handle updates received from Firestore live onSnapshot
@@ -252,17 +317,12 @@ class SabotageEngine {
     const now = Date.now();
     const state = teamData.sabotageState || {};
 
-    // Auto-revert expired sabotages on client
+    // Auto-revert expired sabotages — any player can do this cleanup
     if (state.puzzleSwap?.active && state.puzzleSwap.expiresAt <= now) {
-      if (this.isImpostor) {
-        firebaseService.updateTeam(this.teamId, { "sabotageState.puzzleSwap.active": false });
-      }
+      firebaseService.updateTeam(this.teamId, { "sabotageState.puzzleSwap.active": false });
     }
-
     if (state.mapScramble?.active && state.mapScramble.expiresAt <= now) {
-      if (this.isImpostor) {
-        firebaseService.updateTeam(this.teamId, { "sabotageState.mapScramble.active": false });
-      }
+      firebaseService.updateTeam(this.teamId, { "sabotageState.mapScramble.active": false });
     }
 
     // Refresh Impostor dock if rendered
@@ -270,9 +330,53 @@ class SabotageEngine {
       this.renderImpostorDock();
     }
 
-    // Visual glitch effect for teammates if sabotage active
-    const isAnyActive = (state.puzzleSwap?.active && state.puzzleSwap.expiresAt > now) ||
-                        (state.mapScramble?.active && state.mapScramble.expiresAt > now);
+    // ── CREWMATE / EVERYONE: fire alarm banner when NEW sabotage activates ──
+    const puzzleSwapJustActivated = state.puzzleSwap?.active &&
+      state.puzzleSwap.expiresAt > now &&
+      !this.activeSabotageNotificationShown.has("puzzleSwap_" + state.puzzleSwap.startedAt);
+
+    const mapScrambleJustActivated = state.mapScramble?.active &&
+      state.mapScramble.expiresAt > now &&
+      !this.activeSabotageNotificationShown.has("mapScramble_" + state.mapScramble.startedAt);
+
+    const fakeRejectJustArmed = state.fakeReject?.active &&
+      !this.activeSabotageNotificationShown.has("fakeReject_" + state.fakeReject.armedAt);
+
+    if (puzzleSwapJustActivated && !this.isImpostor) {
+      this.activeSabotageNotificationShown.add("puzzleSwap_" + state.puzzleSwap.startedAt);
+      showAlarmBanner(
+        "⚠ SYSTEM CORRUPTED",
+        "Puzzle data has been tampered with! You are now seeing a DECOY puzzle. Solve it if you can — or wait ~90 seconds for the system to restore.",
+        true
+      );
+    }
+
+    if (mapScrambleJustActivated && !this.isImpostor) {
+      this.activeSabotageNotificationShown.add("mapScramble_" + state.mapScramble.startedAt);
+      showAlarmBanner(
+        "📡 RADAR SCRAMBLED",
+        `Navigation beacon hijacked! Your map may be pointing to the WRONG location: ${state.mapScramble.fakeLocationName || 'Unknown'}. Find the real station in ~2 minutes.`,
+        true
+      );
+    }
+
+    if (fakeRejectJustArmed && !this.isImpostor) {
+      this.activeSabotageNotificationShown.add("fakeReject_" + state.fakeReject.armedAt);
+      // Don't announce fakeReject to crewmates — they should just experience it
+    }
+
+    // Impostor: confirmation toast when sabotage fired successfully
+    if (puzzleSwapJustActivated && this.isImpostor) {
+      this.activeSabotageNotificationShown.add("puzzleSwap_" + state.puzzleSwap.startedAt);
+    }
+    if (mapScrambleJustActivated && this.isImpostor) {
+      this.activeSabotageNotificationShown.add("mapScramble_" + state.mapScramble.startedAt);
+    }
+
+    // Visual glitch CSS for ALL players when any sabotage is live
+    const isAnyActive =
+      (state.puzzleSwap?.active && state.puzzleSwap.expiresAt > now) ||
+      (state.mapScramble?.active && state.mapScramble.expiresAt > now);
 
     if (isAnyActive) {
       document.body.classList.add("system-interference");

@@ -106,17 +106,21 @@ export const LOCATIONS = [
     puzzle: {
       type: "crossword-3x3",
       category: "Mini Crossword (3×3)",
-      question: "STATION INTEL RECOVERED: A 3×3 letter grid was found pinned to the OSAIL notice board. Three things you'd find near a research station — one place, one part, one problem. Read each row left-to-right and write all three row-words together with no spaces:",
-      // Grid: LAB / ARM / BUG — shown as-is, NO answer shown elsewhere
+      question: "STATION INTEL — A 3×3 letter grid was found encoded in the OSAIL signal log. Each row spells a word reading LEFT → RIGHT. The grid encodes: one process that takes years, one invisible force that keeps you grounded, one tiny unit of matter. Read the three row-words and concatenate them (no spaces, no hyphens) to form your 9-letter answer code.",
+      // Grid: EVE / OLV / TIO → EVOLUTION
+      // Row 0: E V O
+      // Row 1: L U T
+      // Row 2: I O N
+      // Concat: EVOLUTION (9 letters) — answer is EVOLUTION
       grid: [
-        ["L","A","B"],
-        ["A","R","M"],
-        ["B","U","G"]
+        ["E","V","O"],
+        ["L","U","T"],
+        ["I","O","N"]
       ],
-      answer: "LABARMBUG",
-      hint: "Row 1 is a place where science happens. Row 2 is a body part. Row 3 is an annoying tiny creature. Smash all three together!"
+      answer: "EVOLUTION",
+      hint: "Row 1 starts the word. Row 2 has the middle. Row 3 ends it. The full 9-letter word describes Darwin's big idea."
     },
-    acceptedAnswers: ["labarmbug", "lab arm bug", "lab-arm-bug", "labrarmbug"],
+    acceptedAnswers: ["evolution", "EVOLUTION"],
     decoyPuzzle: {
       question: "Input the 6-character relay serial from the electrical conduit under the OSAIL canopy lamp: [HEX code]",
       type: "text",
@@ -135,19 +139,18 @@ export const LOCATIONS = [
     clue: "Navigate east between D Block and C Block to locate D Block Gazebo.",
     puzzle: {
       type: "caesar-cipher",
-      category: "Caesar Cipher (Shift −3)",
-      // Ciphertext: "WUHDVXUH LV DW WKH JD]HER" decrypts to "TREASURE IS AT THE GAZEBO"
-      // Answer is the FIRST decoded word only — TREASURE
-      question: "ENCRYPTED CREW DISTRESS MESSAGE intercepted at D Block Gazebo. Julius Caesar always shifted his letters by 3. Shift each letter BACK 3 places (D→A, E→B, F→C…). Decode the first word of the message and enter it as your answer:",
-      cipherText: "WUHDVXUH LV DW WKH JD]HER",
-      shiftHint: "Shift each letter back by 3  |  D→A  E→B  F→C  G→D  H→E …  Z→W",
-      answer: "TREASURE",
-      hint: "W goes back 3 → T. U→R. H→E. D→A. V→S. X→U. U→R. H→E. What 8-letter word does that spell?"
+      category: "Caesar Cipher (Shift −13)",
+      // Shift = ROT-13 (harder — most people know "shift by 3" but not ROT-13)
+      // Plaintext:  SABOTAGE
+      // Ciphertext: FNOBGNTR  (each letter +13 mod 26)
+      // Shift hint: shift back 13, i.e. A↔N, B↔O ... ROT-13
+      question: "ENCRYPTED CREW DISTRESS SIGNAL intercepted at D Block Gazebo. This cipher does NOT use shift-3. Instead, each letter has been shifted by EXACTLY 13 positions forward in the alphabet (ROT-13). Shift each letter BACK 13 places to decode. Enter ONLY the single decoded word as your answer:",
+      cipherText: "FNOBGNTR",
+      shiftHint: "Shift back 13  |  N→A  O→B  P→C … Z→M  |  ROT-13 is its own inverse",
+      answer: "SABOTAGE",
+      hint: "F→S, N→A, O→B, B→O, G→T, N→A, T→G, R→E. What 8-letter word do you get?"
     },
-    acceptedAnswers: [
-      "treasure", "TREASURE", "Treasure",
-      "treasure is at the gazebo", "treasureisatthegazebo"
-    ],
+    acceptedAnswers: ["sabotage", "SABOTAGE", "Sabotage"],
     decoyPuzzle: {
       question: "Count the exact number of red paver blocks forming the D Block Gazebo foundation ramp.",
       type: "number",
@@ -166,32 +169,38 @@ export const LOCATIONS = [
     clue: "Proceed south into the courtyard amphitheater known as Germi.",
     puzzle: {
       type: "kenken",
-      category: "Mini KenKen (3×3)",
+      category: "Mini KenKen (4×4)",
+      // Upgraded to 4×4 KenKen for more difficulty
+      // Digits 1–4, no repeats per row or column
       // Solved grid:
-      //   Row 0:  1  2  3
-      //   Row 1:  2  3  1   ← ANSWER ROW (middle)
-      //   Row 2:  3  1  2
-      // Cages (no filled values shown in visual):
-      //   A: (0,0)+(0,1) sum=3  → "3+"
-      //   B: (0,2) single=3    → "3"
-      //   C: (1,0)+(2,0) product=6 → "6×"
-      //   D: (1,1)+(1,2) sum=4 → "4+"
-      //   E: (2,1)+(2,2) sum=3 → "3+"
-      question: "OXYGEN RECYCLER LOCK: Fill this 3×3 KenKen using only the digits 1, 2, 3 — no digit may repeat in any row or column. Each outlined cage shows a target value and operation in its top-left corner. Solve the full grid, then enter the MIDDLE ROW (Row 2) as a 3-digit code, left to right:",
-      // Cage map by cell [row][col]:
-      //  (0,0) → cage A "3+"   (0,1) → cage A      (0,2) → cage B "3"
-      //  (1,0) → cage C "6×"  (1,1) → cage D "4+"  (1,2) → cage D
-      //  (2,0) → cage C        (2,1) → cage E "3+"  (2,2) → cage E
+      //   Row 0:  2  1  4  3
+      //   Row 1:  3  4  1  2   ← ANSWER ROW (middle of 4 rows = row index 1, but we ask row 2 = index 1 0-based)
+      //   Row 2:  1  3  2  4
+      //   Row 3:  4  2  3  1
+      //
+      // We ask for ROW 2 (1-indexed, 0-indexed = row index 1): 3 4 1 2 → answer: "3412"
+      //
+      // Cages (no filled values shown):
+      //   A: (0,0)+(1,0) = 5+       → top-left 2-cell vertical
+      //   B: (0,1) = single = 1     → (0,1) single cell
+      //   C: (0,2)+(0,3) = 7+       → top-right 2-cell horizontal
+      //   D: (1,1)+(1,2) = 5+       → mid 2-cell horizontal
+      //   E: (1,3)+(2,3) = 6+       → right 2-cell vertical
+      //   F: (2,0)+(2,1)+(2,2) = 6+ → row 2 left trio
+      //   G: (3,0)+(3,1) = 6+       → bottom-left 2-cell horizontal
+      //   H: (3,2)+(3,3) = 4+       → bottom-right 2-cell horizontal
+      question: "OXYGEN RECYCLER LOCK: Solve this 4×4 KenKen using only digits 1, 2, 3, 4 — no digit may repeat in any row or column. Each outlined cage shows a target value and operation in its corner. Solve the full grid, then enter ROW 2 (the second row from the top) as a 4-digit code, left to right:",
       cageMap: [
-        ["A","A","B"],
-        ["C","D","D"],
-        ["C","E","E"]
+        ["A","B","C","C"],
+        ["A","D","D","E"],
+        ["F","F","F","E"],
+        ["G","G","H","H"]
       ],
-      cageLabels: { A:"3+", B:"3", C:"6×", D:"4+", E:"3+" },
-      answer: "231",
-      hint: "Cage B (top-right single cell) = 3. Cage A (3+) shares with that row, so the pair is 1+2. Cage C (6×) is 2×3. Work from there!"
+      cageLabels: { A:"5+", B:"1", C:"7+", D:"5+", E:"6+", F:"6+", G:"6+", H:"4+" },
+      answer: "3412",
+      hint: "Cage B is a single cell with value 1 — so (0,1)=1. Cage C (7+) with values from 1-4: only 3+4=7. Cage A (5+) vertical: must be 2+3 or 3+2. Work column by column!"
     },
-    acceptedAnswers: ["231", "2 3 1", "2,3,1", "2-3-1"],
+    acceptedAnswers: ["3412", "3 4 1 2", "3,4,1,2", "3-4-1-2"],
     decoyPuzzle: {
       question: "Enter the sound resonance frequency (kHz) from amplifier panel #3 behind the Germi stage.",
       type: "text",
@@ -210,14 +219,12 @@ export const LOCATIONS = [
     clue: "Walk into the sheltered courtyard plaza of C Block to reach C Block Gazebo.",
     puzzle: {
       type: "riddle",
-      category: "Lateral Riddle",
-      question: "INTERCEPTED CREW RIDDLE: Read carefully and answer with a single word.\n\n\"I have a map but no land, a crew but no ship, tasks but no hands. Wherever I'm opened, someone's always watching — but I never speak, I only show. What am I?\"",
-      answer: "SCREEN",
-      hint: "You're literally holding the answer right now — it's the surface between your face and the game."
+      category: "Logic Riddle",
+      question: "INTERCEPTED CREW RIDDLE — Read every line carefully before answering:\n\n\"I speak without a mouth and hear without ears. I have no body, but I come alive with wind. Mountains bow to me in seconds. I repeat your every secret faithfully, yet I have no memory. What am I?\"\n\nEnter your single-word answer:",
+      answer: "ECHO",
+      hint: "I am produced when sound bounces off a surface. You can hear me in valleys and caves. I repeat what you say but I am not a recording."
     },
-    acceptedAnswers: [
-      "screen", "phone screen", "phone", "display", "phonescreen"
-    ],
+    acceptedAnswers: ["echo", "ECHO", "Echo", "an echo"],
     decoyPuzzle: {
       question: "Count the number of steel hexagonal bolts securing the C Block Gazebo canopy braces.",
       type: "number",
@@ -237,27 +244,28 @@ export const LOCATIONS = [
     puzzle: {
       type: "sudoku",
       category: "Mini Sudoku (4×4)",
-      // Partial grid given (null = blank):
-      //   Row 0: [1, ?, ?, 4]
-      //   Row 1: [?, 4, 1, ?]
-      //   Row 2: [?, 1, 4, ?]
-      //   Row 3: [4, ?, ?, 1]
+      // Harder partial grid — fewer givens (only 4 given out of 16)
       // Unique solution:
-      //   Row 0: 1 3 2 4   ← ANSWER ROW (top)
-      //   Row 1: 2 4 1 3
-      //   Row 2: 3 1 4 2
-      //   Row 3: 4 2 3 1
-      question: "REACTOR CORE SEQUENCE: Complete this 4×4 Sudoku. Every row, column, and 2×2 box must contain the digits 1, 2, 3, 4 — no repeats. Solve the full grid, then enter the TOP ROW as a 4-digit code, left to right:",
+      //   Row 0: 3  1  4  2   ← ANSWER ROW (top)
+      //   Row 1: 4  2  3  1
+      //   Row 2: 2  4  1  3
+      //   Row 3: 1  3  2  4
+      // Given (null = blank):
+      //   Row 0: [null, 1, null, null]
+      //   Row 1: [null, null, 3, null]
+      //   Row 2: [null, 4, null, null]
+      //   Row 3: [1, null, null, 4]
+      question: "REACTOR CORE SEQUENCE — WARNING: This Sudoku has only 4 pre-filled cells. Every row, column, and 2×2 box must contain digits 1, 2, 3, 4 — no repeats. Solve the ENTIRE grid, then enter the TOP ROW as a 4-digit code, left to right:",
       givenGrid: [
-        [1,    null, null, 4   ],
-        [null, 4,    1,    null],
-        [null, 1,    4,    null],
-        [4,    null, null, 1   ]
+        [null, 1,    null, null],
+        [null, null, 3,    null],
+        [null, 4,    null, null],
+        [1,    null, null, 4   ]
       ],
-      answer: "1324",
-      hint: "Look at the top-left 2×2 box: it has 1 and 4, so the other two cells need 2 and 3. Column constraints will tell you which order."
+      answer: "3142",
+      hint: "Start with the bottom-left 2×2 box: it has 1 and 4, so the other two must be 2 and 3. Column 1 already has 1 and 4 — use that to deduce row 3, col 1."
     },
-    acceptedAnswers: ["1324", "1 3 2 4", "1,3,2,4", "1-3-2-4"],
+    acceptedAnswers: ["3142", "3 1 4 2", "3,1,4,2", "3-1-4-2"],
     decoyPuzzle: {
       question: "Transcribe the 5-digit room code on the ground-floor faculty door facing the A Block benches.",
       type: "text",
@@ -277,14 +285,15 @@ export const LOCATIONS = [
     puzzle: {
       type: "anagram",
       category: "Final Anagram",
-      // Scrambled letters of IMPOSTOR: R T S P O M I O
-      // shown as tiles — NEVER display the answer word anywhere
-      question: "FINAL EXTRACTION PROTOCOL: Someone on your team has been lying all day. Rearrange these 8 scrambled letters to reveal what they are called. Enter the unscrambled word to log your team's mission completion:",
-      scrambledLetters: ["R","T","S","P","O","M","I","O"],
-      answer: "IMPOSTOR",
-      hint: "8 letters. They've been sabotaging your crew this whole hunt. It's a word you've seen in this game before…"
+      // Harder: 10-letter anagram, more misleading
+      // Word: CONSPIRACY (10 letters)
+      // Scrambled: S P I R A C Y O N C
+      question: "FINAL EXTRACTION PROTOCOL — Your mission data has been encrypted with the last keyword. Someone planned this from the very beginning. Unscramble all 10 letters below into a single English word that describes what the Impostor was running all along. Enter the word to complete your mission:",
+      scrambledLetters: ["S","P","I","R","A","C","Y","O","N","C"],
+      answer: "CONSPIRACY",
+      hint: "10 letters. It's a secret plan by a group of people to do something harmful or illegal. Think: the Impostor didn't work alone…"
     },
-    acceptedAnswers: ["impostor", "imposter", "IMPOSTOR", "IMPOSTER"],
+    acceptedAnswers: ["conspiracy", "CONSPIRACY", "Conspiracy"],
     decoyPuzzle: {
       question: "Enter the 8-digit fire extinguisher inspection seal code mounted beside the Mess hall stairs.",
       type: "text",

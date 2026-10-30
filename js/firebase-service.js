@@ -334,25 +334,69 @@ class FirebaseService {
   }
 
   /**
-   * Update team fields in Firestore
+   * Helper: Deep merge source object into target object
+   */
+  _deepMerge(target, source) {
+    if (!source || typeof source !== 'object') return target;
+    for (const key of Object.keys(source)) {
+      if (source[key] instanceof Object && !Array.isArray(source[key]) && key in target && target[key] instanceof Object) {
+        Object.assign(source[key], this._deepMerge(target[key], source[key]));
+      }
+    }
+    Object.assign(target || {}, source);
+    return target;
+  }
+
+  /**
+   * Helper: Convert dot-notation keys (e.g. "sabotageState.puzzleSwap.active": false)
+   * into a nested object structure.
+   */
+  _unflatten(obj) {
+    const result = {};
+    for (const key of Object.keys(obj || {})) {
+      if (key.includes('.')) {
+        const parts = key.split('.');
+        let curr = result;
+        for (let i = 0; i < parts.length - 1; i++) {
+          curr[parts[i]] = curr[parts[i]] || {};
+          curr = curr[parts[i]];
+        }
+        curr[parts[parts.length - 1]] = obj[key];
+      } else {
+        result[key] = obj[key];
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Update team fields in Firestore (and mock DB fallback)
+   * Supports both nested objects and dot-notation paths safely.
    */
   async updateTeam(teamId, updates) {
     await this.ready();
     const cleanId = String(teamId).trim().toUpperCase();
+    const nestedUpdates = this._unflatten(updates);
 
     if (this.isLiveFirebase) {
       try {
-        await this.db.collection("teams").doc(cleanId).set(updates, { merge: true });
+        // Try update with raw dot-notation first (Firestore native support for FieldPaths)
+        await this.db.collection("teams").doc(cleanId).update(updates);
       } catch (err) {
-        console.error("Firestore updateTeam error:", err);
-        throw err;
+        // If doc doesn't exist or update fails, use set with deep merge
+        try {
+          await this.db.collection("teams").doc(cleanId).set(nestedUpdates, { merge: true });
+        } catch (setErr) {
+          console.error("Firestore updateTeam error:", setErr);
+          throw setErr;
+        }
       }
     } else {
       const teams = JSON.parse(localStorage.getItem("pdeu_mock_teams") || "{}");
       if (!teams[cleanId]) {
         teams[cleanId] = { id: cleanId };
       }
-      teams[cleanId] = { ...teams[cleanId], ...updates };
+      this._deepMerge(teams[cleanId], nestedUpdates);
       localStorage.setItem("pdeu_mock_teams", JSON.stringify(teams));
       this._notifyMockTeam(cleanId, teams[cleanId]);
     }

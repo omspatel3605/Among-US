@@ -56,11 +56,9 @@
     .sudoku-cell.thick-r  { border-right:  3px solid #38fedc; }
     .sudoku-cell.thick-b  { border-bottom: 3px solid #38fedc; }
 
-    /* ── KENKEN (3×3) ── */
+    /* ── KENKEN (3×3 or 4×4) ── */
     .kenken-grid {
       display: grid;
-      grid-template-columns: repeat(3, 72px);
-      grid-template-rows: repeat(3, 72px);
       gap: 0;
       border: 3px solid #38fedc;
       border-radius: 8px;
@@ -73,26 +71,29 @@
       align-items: center;
       justify-content: center;
       font-family: var(--font-display);
-      font-size: 22px;
+      font-size: 20px;
       color: transparent; /* cells are EMPTY — no digit shown */
       border: 1px solid #2d325a;
     }
-    .kenken-cell.mid-row {
-      background: rgba(245,245,87,0.06);
-      border-color: rgba(245,245,87,0.3);
+    .kenken-cell.target-row {
+      background: rgba(245,245,87,0.08);
+      border-color: rgba(245,245,87,0.4);
     }
     /* cage colour tints */
-    .kenken-cell[data-cage="A"] { background: rgba(56,254,220,0.09); }
+    .kenken-cell[data-cage="A"] { background: rgba(56,254,220,0.11); }
     .kenken-cell[data-cage="B"] { background: rgba(245,245,87,0.12); }
-    .kenken-cell[data-cage="C"] { background: rgba(168,85,247,0.10); }
-    .kenken-cell[data-cage="D"] { background: rgba(239,68,68,0.10);  }
-    .kenken-cell[data-cage="E"] { background: rgba(34,197,94,0.10);  }
+    .kenken-cell[data-cage="C"] { background: rgba(168,85,247,0.12); }
+    .kenken-cell[data-cage="D"] { background: rgba(239,68,68,0.12);  }
+    .kenken-cell[data-cage="E"] { background: rgba(34,197,94,0.12);  }
+    .kenken-cell[data-cage="F"] { background: rgba(249,115,22,0.12); }
+    .kenken-cell[data-cage="G"] { background: rgba(59,130,246,0.12); }
+    .kenken-cell[data-cage="H"] { background: rgba(236,72,153,0.12); }
     .kenken-cage-badge {
       position: absolute;
-      top: 3px;
-      left: 4px;
+      top: 2px;
+      left: 3px;
       font-family: var(--font-mono);
-      font-size: 11px;
+      font-size: 10px;
       color: var(--cyan);
       font-weight: 700;
       letter-spacing: 0.5px;
@@ -508,8 +509,8 @@
 
       // ── 2. CAESAR CIPHER ──
       else if (type === "caesar-cipher") {
-        const ct = puzzle.cipherText || "WUHDVXUH LV DW WKH JD]HER";
-        const rule = puzzle.shiftHint || "Shift each letter back by 3  |  D→A  E→B  F→C  G→D  H→E …  Z→W";
+        const ct = puzzle.cipherText || "FNOBGNTR";
+        const rule = puzzle.shiftHint || "Shift each letter back by 13 (ROT-13) | N→A  O→B  P→C … Z→M";
         puzzleVisualContainer.innerHTML = `
           <div class="cipher-terminal">
             <div class="cipher-label">⚡ INTERCEPTED ENCRYPTED MESSAGE ⚡</div>
@@ -517,46 +518,49 @@
             <div class="cipher-rule">🔑 ${rule}</div>
             <div class="cipher-strip">
               CIPHER:  A B C D E F G H I J K L M N O P Q R S T U V W X Y Z<br>
-              PLAIN :  X Y Z A B C D E F G H I J K L M N O P Q R S T U V W
+              PLAIN :  N O P Q R S T U V W X Y Z A B C D E F G H I J K L M
             </div>
             <div style="font-size:10px;color:var(--yellow);text-align:center;margin-top:8px;font-family:var(--font-mono);">
-              ↳ Decode the FIRST word only and enter it as your answer
+              ↳ Decode the word and enter it as your answer
             </div>
           </div>
         `;
       }
 
-      // ── 3. KENKEN (3×3, EMPTY cells, cages shown) ──
+      // ── 3. KENKEN (EMPTY cells, cages shown) ──
       else if (type === "kenken") {
-        // cage map per cell: [row][col] → cage letter
-        const cageMap = puzzle.cageMap || [["A","A","B"],["C","D","D"],["C","E","E"]];
-        const cageLabels = puzzle.cageLabels || { A:"3+", B:"3", C:"6×", D:"4+", E:"3+" };
-        // track which cell first holds the badge
+        const cageMap = puzzle.cageMap || [
+          ["A","B","C","C"],
+          ["A","D","D","E"],
+          ["F","F","F","E"],
+          ["G","G","H","H"]
+        ];
+        const cageLabels = puzzle.cageLabels || { A:"5+", B:"1", C:"7+", D:"5+", E:"6+", F:"6+", G:"6+", H:"4+" };
+        const N = cageMap.length;
+        const cellSize = N === 4 ? 54 : 68;
+
         const badgePlaced = {};
         let cells = "";
-        for (let r = 0; r < 3; r++) {
-          for (let c = 0; c < 3; c++) {
+        for (let r = 0; r < N; r++) {
+          for (let c = 0; c < N; c++) {
             const cage = cageMap[r][c];
-            const isMid = (r === 1);
-            const midCls = isMid ? " mid-row" : "";
-            // thick right border between cage groups (simplified: col 1→2 break)
-            const borderR = (c < 2) ? " style=\"border-right:2px solid #2d325a;\"" : "";
-            const borderB = (r < 2) ? " style=\"border-bottom:2px solid #2d325a;\"" : "";
+            const isTargetRow = (r === 1); // Row 2 (index 1) is the target
+            const targetCls = isTargetRow ? " target-row" : "";
             const badge = (!badgePlaced[cage] && cageLabels[cage])
               ? `<span class="kenken-cage-badge">${cageLabels[cage]}</span>` : "";
             if (!badgePlaced[cage]) badgePlaced[cage] = true;
-            cells += `<div class="kenken-cell${midCls}" data-cage="${cage}">${badge}</div>`;
+            cells += `<div class="kenken-cell${targetCls}" data-cage="${cage}" style="width:${cellSize}px;height:${cellSize}px;">${badge}</div>`;
           }
         }
         puzzleVisualContainer.innerHTML = `
           <div style="text-align:center; font-family:var(--font-mono); font-size:10px; color:var(--muted); margin-bottom:8px; letter-spacing:1px;">
-            3×3 KENKEN — digits 1, 2, 3 — no repeats per row or column
+            ${N}×${N} KENKEN — digits 1 to ${N} — no repeats per row or column
           </div>
-          <div class="kenken-grid">${cells}</div>
+          <div class="kenken-grid" style="grid-template-columns:repeat(${N}, ${cellSize}px); grid-template-rows:repeat(${N}, ${cellSize}px);">${cells}</div>
           <div style="margin-top:10px; font-family:var(--font-mono); font-size:11px; color:var(--muted); line-height:1.6; text-align:center;">
             🟦 Cage colours group cells • Corner badge = target value &amp; operation<br>
             <span style="color:var(--yellow); font-weight:700; font-size:12px;">
-              Enter MIDDLE ROW (Row 2) as a 3-digit code, left to right
+              Enter ROW 2 (second row from top) as a ${N}-digit code, left to right
             </span>
           </div>
         `;

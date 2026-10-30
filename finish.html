@@ -48,13 +48,13 @@
       </div>
     </div>
 
-    <!-- 1. VOTING SECTION (3-4 Player Teams) -->
+    <!-- 1. VOTING SECTION (3+ Player Teams) -->
     <div id="voting-section" class="card hidden">
       <h3 class="font-display" style="color:var(--red); font-size:17px; margin-bottom:4px;">
         🚨 EMERGENCY MEETING: WHO WAS THE IMPOSTOR?
       </h3>
       <p style="color:var(--muted); font-size:12px; margin-bottom:14px;">
-        Cast your private accusation. Who was sabotaging your screens?
+        Vote for who you think the Impostor was. <strong style="color:var(--yellow);">Majority wins!</strong> Everyone votes — including yourself.
       </p>
 
       <div id="voting-candidates" style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px;">
@@ -200,7 +200,7 @@
       document.getElementById("stat-sabotage-count").textContent = sabotageCount;
 
       // 1. 2-PLAYER TEAMS: ROGUE AI
-      if (currentTeam.size === 2 || user.role === "survivor") {
+      if ((currentTeam.size === 2 || currentTeam.maxSize === 2) && user.role === "survivor") {
         document.getElementById("rogue-ai-summary").classList.remove("hidden");
         const aiGlitches = sabotageEvents.filter(e => e.type === "aiGlitch");
         document.getElementById("ai-glitches-count").textContent = aiGlitches.length;
@@ -227,7 +227,7 @@
 
         firebaseService.updateTeam(user.teamId, { score: finalScore });
       } 
-      // 2. 3-4 PLAYER TEAMS: VOTING
+      // 2. 3+ PLAYER TEAMS: VOTING
       else {
         setupVotingSystem(totalMinutes, totalWrong, sabotageCount);
       }
@@ -248,19 +248,20 @@
       const submitBtn = document.getElementById("btn-submit-vote");
       const players = currentTeam.players || [];
       const realImpostor = players.find(p => p.role === "impostor");
+      const totalVoters = players.length; // everyone votes
 
+      // Render ALL players as candidates (can vote for anyone including yourself)
       candidatesContainer.innerHTML = "";
       players.forEach(p => {
-        if (p.playerId === user.playerId) return; // Cannot vote for oneself
-
+        const isMe = p.playerId === user.playerId;
         const card = document.createElement("div");
         card.className = "lobby-slot lobby-slot-filled";
         card.style.cursor = "pointer";
         card.dataset.id = p.playerId;
         card.innerHTML = `
-          <div class="slot-color" style="background:#ef4444"></div>
+          <div class="slot-color" style="background:${isMe ? '#2d5a2d' : '#ef4444'}"></div>
           <div class="slot-info">
-            <span class="slot-name">${p.name}</span>
+            <span class="slot-name">${p.name}${isMe ? ' <span style="color:var(--muted);font-size:10px;">(you)</span>' : ''}</span>
             <span class="slot-id">Suspect ID: ${p.playerId.slice(-4)}</span>
           </div>
           <input type="radio" name="suspect" value="${p.playerId}">
@@ -271,7 +272,7 @@
           selectedCandidateId = p.playerId;
           card.querySelector("input").checked = true;
           document.querySelectorAll("#voting-candidates .lobby-slot").forEach(c => c.style.borderColor = "var(--border)");
-          card.style.borderColor = "var(--red)";
+          card.style.borderColor = isMe ? "var(--green-light)" : "var(--red)";
           vibrate([30]);
         });
 
@@ -283,13 +284,13 @@
 
       if (myVote) {
         submitBtn.disabled = true;
-        submitBtn.textContent = "ACCUSATION CAST";
-        renderVotingResults(existingVotes, players, realImpostor, totalMinutes, totalWrong, sabotageCount);
+        submitBtn.textContent = "ACCUSATION CAST ✓";
+        renderVotingResults(existingVotes, players, realImpostor, totalVoters, totalMinutes, totalWrong, sabotageCount);
       }
 
       submitBtn.addEventListener("click", async () => {
         if (!selectedCandidateId) {
-          showToast("Select a teammate to accuse!", "error");
+          showToast("Select a suspect to accuse!", "error");
           return;
         }
 
@@ -298,56 +299,109 @@
         submitBtn.textContent = "TRANSMITTING VOTE...";
 
         const newVotes = [...(currentTeam.votes || [])];
-        newVotes.push({
+        // Replace existing vote from this player if any
+        const existingIdx = newVotes.findIndex(v => v.playerId === user.playerId);
+        const voteEntry = {
           playerId: user.playerId,
           voterName: user.playerName,
           guessedId: selectedCandidateId,
           timestamp: Date.now()
-        });
+        };
+        if (existingIdx >= 0) {
+          newVotes[existingIdx] = voteEntry;
+        } else {
+          newVotes.push(voteEntry);
+        }
 
         await firebaseService.updateTeam(user.teamId, { votes: newVotes });
         currentTeam.votes = newVotes;
-        renderVotingResults(newVotes, players, realImpostor, totalMinutes, totalWrong, sabotageCount);
+        submitBtn.textContent = "ACCUSATION CAST ✓";
+        renderVotingResults(newVotes, players, realImpostor, totalVoters, totalMinutes, totalWrong, sabotageCount);
       });
 
       firebaseService.subscribeTeam(user.teamId, (updated) => {
         if (!updated) return;
         currentTeam = updated;
         const votes = updated.votes || [];
-        document.getElementById("vote-tally-status").textContent = `Votes Cast: ${votes.length} / ${Math.max(1, players.length - 1)}`;
-        if (myVote || votes.some(v => v.playerId === user.playerId)) {
-          renderVotingResults(votes, players, realImpostor, totalMinutes, totalWrong, sabotageCount);
+        const castCount = votes.length;
+        document.getElementById("vote-tally-status").textContent =
+          `Votes cast: ${castCount} / ${totalVoters}` +
+          (castCount >= totalVoters ? " — ALL VOTES IN! 🗳️" : " — waiting for team…");
+
+        const myCurrentVote = votes.find(v => v.playerId === user.playerId);
+        if (myCurrentVote) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = "ACCUSATION CAST ✓";
+        }
+        // Show results once everyone voted OR current player already voted
+        if (castCount >= totalVoters || myCurrentVote) {
+          renderVotingResults(votes, players, realImpostor, totalVoters, totalMinutes, totalWrong, sabotageCount);
         }
       });
     }
 
-    function renderVotingResults(votes, players, realImpostor, totalMinutes, totalWrong, sabotageCount) {
+    function renderVotingResults(votes, players, realImpostor, totalVoters, totalMinutes, totalWrong, sabotageCount) {
       const banner = document.getElementById("reveal-banner");
       banner.classList.remove("hidden");
 
       const ejectText = document.getElementById("eject-text");
       const verdict = document.getElementById("eject-verdict");
 
+      // Tally votes: candidate with the most votes wins (ties result in no ejection)
       const voteCounts = {};
       votes.forEach(v => { voteCounts[v.guessedId] = (voteCounts[v.guessedId] || 0) + 1; });
 
-      let maxVotes = 0;
-      let accusedId = null;
-      for (const id in voteCounts) {
-        if (voteCounts[id] > maxVotes) {
-          maxVotes = voteCounts[id];
-          accusedId = id;
-        }
-      }
+      const sortedCandidates = Object.entries(voteCounts).sort((a, b) => b[1] - a[1]);
+      const topCount = sortedCandidates[0] ? sortedCandidates[0][1] : 0;
+      const secondCount = sortedCandidates[1] ? sortedCandidates[1][1] : 0;
+      const isTie = (sortedCandidates.length > 1 && topCount === secondCount);
+      const accusedId = (!isTie && topCount > 0) ? sortedCandidates[0][0] : null;
+      const hasMajority = !isTie && topCount > 0;
 
       const accusedPlayer = players.find(p => p.playerId === accusedId);
-      const isImpostorCaught = accusedPlayer && realImpostor && accusedPlayer.playerId === realImpostor.playerId;
+      const isImpostorCaught = hasMajority && accusedPlayer && realImpostor &&
+                               accusedPlayer.playerId === realImpostor.playerId;
 
-      if (isImpostorCaught) {
+      // Build per-player vote summary
+      const voteRows = players.map(p => {
+        const theirVote = votes.find(v => v.playerId === p.playerId);
+        const votedFor = theirVote ? (players.find(x => x.playerId === theirVote.guessedId)?.name || "?") : "—";
+        return `<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid var(--border);">
+          <span>${p.name}</span><span style="color:var(--muted);">voted → <strong>${votedFor}</strong></span>
+        </div>`;
+      }).join("");
+
+      const tallyRows = Object.entries(voteCounts)
+        .sort((a, b) => b[1] - a[1])
+        .map(([pid, count]) => {
+          const name = players.find(p => p.playerId === pid)?.name || "?";
+          const bar = "█".repeat(count);
+          return `<div style="display:flex;gap:8px;align-items:center;font-size:12px;padding:2px 0;">
+            <span style="min-width:70px;">${name}</span>
+            <span style="color:var(--red);font-family:var(--font-mono);">${bar}</span>
+            <span style="color:var(--yellow);font-family:var(--font-mono);">${count}v</span>
+          </div>`;
+        }).join("");
+
+      if (isTie || !hasMajority) {
+        sound.error();
+        const impName = realImpostor ? realImpostor.name : "Unknown";
+        ejectText.innerHTML = `
+          🌌 <strong>No majority reached — it's a TIE!</strong><br>
+          <span style="color:var(--red); font-size:14px;">The real Impostor was: <strong>${impName}</strong>!</span><br>
+          <div style="margin-top:8px;text-align:left;">${tallyRows}</div>
+          <div style="margin-top:6px;text-align:left;border-top:1px dashed var(--border);padding-top:6px;">${voteRows}</div>
+        `;
+        verdict.style.color = "var(--red)";
+        verdict.textContent = "😈 THE IMPOSTOR ESCAPED — NO CONSENSUS!";
+        setupSouvenirStamp(user.role === 'impostor' ? 'Got Away With It 😈' : 'Survived The Hunt', user.role === 'impostor' ? 'IMPO' : 'CREW');
+      } else if (isImpostorCaught) {
         sound.success();
         ejectText.innerHTML = `
-          🚀 <strong>${accusedPlayer.name}</strong> was An Impostor.<br>
-          <span style="color:var(--green-light); font-size:14px;">0 Impostors remain.</span>
+          🚀 <strong>${accusedPlayer.name}</strong> was The Impostor.<br>
+          <span style="color:var(--green-light); font-size:14px;">0 Impostors remain. Crew wins!</span><br>
+          <div style="margin-top:8px;text-align:left;">${tallyRows}</div>
+          <div style="margin-top:6px;text-align:left;border-top:1px dashed var(--border);padding-top:6px;">${voteRows}</div>
         `;
         verdict.style.color = "var(--green-light)";
         verdict.textContent = "🏆 THE CREW CAUGHT THE IMPOSTOR!";
@@ -356,11 +410,13 @@
         sound.error();
         const impName = realImpostor ? realImpostor.name : "Unknown";
         ejectText.innerHTML = `
-          🌌 <strong>${accusedPlayer ? accusedPlayer.name : 'Nobody'}</strong> was not An Impostor.<br>
-          <span style="color:var(--red); font-size:14px;">The real Impostor was: <strong>${impName}</strong>!</span>
+          🌌 <strong>${accusedPlayer ? accusedPlayer.name : 'Nobody'}</strong> was not The Impostor.<br>
+          <span style="color:var(--red); font-size:14px;">The real Impostor was: <strong>${impName}</strong>!</span><br>
+          <div style="margin-top:8px;text-align:left;">${tallyRows}</div>
+          <div style="margin-top:6px;text-align:left;border-top:1px dashed var(--border);padding-top:6px;">${voteRows}</div>
         `;
         verdict.style.color = "var(--red)";
-        verdict.textContent = "😈 THE IMPOSTOR GOT AWAY!";
+        verdict.textContent = "😈 WRONG EJECTION — THE IMPOSTOR GOT AWAY!";
         setupSouvenirStamp(user.role === 'impostor' ? 'Got Away With It 😈' : 'Survived The Hunt', user.role === 'impostor' ? 'IMPO' : 'CREW');
       }
 
