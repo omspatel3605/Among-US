@@ -449,12 +449,16 @@
       // Update start button state
       const startBtn = document.getElementById('btn-start-game');
       const hint = document.getElementById('start-hint');
-      if (players.length >= 2) {
+      if (players.length >= 1) {
         startBtn.disabled = false;
-        hint.textContent = `${players.length}/${maxSize} players ready. You can start now!`;
+        if (players.length === 1) {
+          hint.textContent = `1 player joined (Solo / Testing Mode). You can start now!`;
+        } else {
+          hint.textContent = `${players.length}/${maxSize} players ready. You can start now!`;
+        }
       } else {
         startBtn.disabled = true;
-        hint.textContent = `Need at least 2 players (${players.length}/${maxSize} joined)`;
+        hint.textContent = `Waiting for players to join...`;
       }
     }
 

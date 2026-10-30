@@ -205,11 +205,14 @@ class FirebaseService {
     const teamSize = team.maxSize || team.size || players.length;
 
     // Assign roles
-    if (teamSize === 2) {
+    if (players.length === 1) {
+      // Solo testing: assign impostor if team size >= 3 so they can test sabotage dock, else survivor/crewmate
+      players[0].role = (teamSize >= 3) ? "impostor" : (teamSize === 2) ? "survivor" : "crewmate";
+    } else if (teamSize === 2) {
       // 2 players: Rogue AI mode, both are survivors
       players.forEach(p => { p.role = "survivor"; });
     } else {
-      // 3-4 players: Exactly 1 Impostor, rest Crewmates
+      // 3-6 players: Exactly 1 Impostor, rest Crewmates
       const impostorIndex = Math.floor(Math.random() * players.length);
       players.forEach((p, idx) => {
         p.role = idx === impostorIndex ? "impostor" : "crewmate";
@@ -338,12 +341,15 @@ class FirebaseService {
    */
   _deepMerge(target, source) {
     if (!source || typeof source !== 'object') return target;
+    if (!target || typeof target !== 'object') target = {};
     for (const key of Object.keys(source)) {
-      if (source[key] instanceof Object && !Array.isArray(source[key]) && key in target && target[key] instanceof Object) {
-        Object.assign(source[key], this._deepMerge(target[key], source[key]));
+      const val = source[key];
+      if (val && typeof val === 'object' && !Array.isArray(val)) {
+        target[key] = this._deepMerge(target[key] || {}, val);
+      } else {
+        target[key] = val;
       }
     }
-    Object.assign(target || {}, source);
     return target;
   }
 
@@ -380,16 +386,10 @@ class FirebaseService {
 
     if (this.isLiveFirebase) {
       try {
-        // Try update with raw dot-notation first (Firestore native support for FieldPaths)
-        await this.db.collection("teams").doc(cleanId).update(updates);
+        await this.db.collection("teams").doc(cleanId).set(nestedUpdates, { merge: true });
       } catch (err) {
-        // If doc doesn't exist or update fails, use set with deep merge
-        try {
-          await this.db.collection("teams").doc(cleanId).set(nestedUpdates, { merge: true });
-        } catch (setErr) {
-          console.error("Firestore updateTeam error:", setErr);
-          throw setErr;
-        }
+        console.error("Firestore updateTeam error:", err);
+        throw err;
       }
     } else {
       const teams = JSON.parse(localStorage.getItem("pdeu_mock_teams") || "{}");

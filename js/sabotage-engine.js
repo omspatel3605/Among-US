@@ -304,10 +304,6 @@ class SabotageEngine {
       showToast("Failed to arm trap: " + err.message, "error");
     }
   }
-    } catch (err) {
-      showToast("Failed to arm trap: " + err.message, "error");
-    }
-  }
 
   /**
    * Handle updates received from Firestore live onSnapshot
