@@ -53,55 +53,7 @@ export const AMONG_US_COLORS = [
   { id: 'lime', name: 'Lime', hex: '#50ef39', visor: '#ffffff' }
 ];
 
-// Real PDEU Campus Ground-Truth GPS Calibration Reference Points:
-// 1. Center of Mess: 23.15704505788152, 72.66602395231996 -> { x: 50.54%, y: 21.85% }
-// 2. Center of Girls Hostel: 23.156768229375167, 72.66692721223068 -> { x: 66.50%, y: 18.50% }
-// 3. Center of E Block: 23.1555730266912, 72.66454480443679 -> { x: 39.50%, y: 72.20% }
-export const CAMPUS_GEO_CALIBRATION = {
-  landmarks: {
-    mess: { lat: 23.15704505788152, lng: 72.66602395231996, x: 50.54, y: 21.85 },
-    girlsHostel: { lat: 23.156768229375167, lng: 72.66692721223068, x: 66.50, y: 18.50 },
-    eBlock: { lat: 23.1555730266912, lng: 72.66454480443679, x: 39.50, y: 72.20 }
-  },
-  // Affine Transformation parameters (rotates -25.4° to align campus masterplan with real-world orientation):
-  affine: {
-    a: 15266.43055613,
-    b: -7840.39666869,
-    c: -927739.84952994,
-    d: -10850.23959197,
-    e: -23301.74204268,
-    f: 1328065.11048814
-  }
-};
-
-export const CAMPUS_GPS_BOUNDS = {
-  north: 23.1585,
-  south: 23.1520,
-  west: 72.6640,
-  east: 72.6720
-};
-
-// Convert device GPS (lat, lng) to high-precision percentage coords (x%, y%) on 1024x707 college map
-export function gpsToCampusCoords(lat, lng) {
-  if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) {
-    return { x: 50.0, y: 50.0 };
-  }
-
-  const { a, b, c, d, e, f } = CAMPUS_GEO_CALIBRATION.affine;
-  const rawX = a * lng + b * lat + c;
-  const rawY = d * lng + e * lat + f;
-
-  // Clamp within visible map limits (3% to 97%)
-  const clampedX = Math.max(3, Math.min(97, rawX));
-  const clampedY = Math.max(3, Math.min(97, rawY));
-
-  return {
-    x: Number(clampedX.toFixed(1)),
-    y: Number(clampedY.toFixed(1))
-  };
-}
-
-// Sabotage Abilities for Impostors (3-4 player teams)
+// Sabotage Abilities for Impostors (3+ player teams)
 export const SABOTAGE_CONFIG = {
   puzzleSwap: {
     id: "puzzleSwap",
@@ -130,8 +82,14 @@ export const SABOTAGE_CONFIG = {
 };
 
 /**
- * 6 Fixed Sequential PDEU Campus Locations
- * Puzzles answer reveals the next destination!
+ * 6 Fixed Sequential PDEU Campus Locations on the Official Map
+ * Locations:
+ * 1. OSAIL Gazebo
+ * 2. D Block Gazebo
+ * 3. Germi (Gemini Stage)
+ * 4. C Block Gazebo
+ * 5. A Block Seating
+ * 6. Mess 1st Floor
  */
 export const LOCATIONS = [
   {
@@ -139,23 +97,25 @@ export const LOCATIONS = [
     order: 1,
     name: "OSAIL Gazebo",
     shortName: "OSAIL Gazebo",
-    coords: { x: 46.5, y: 41.0 },
-    gps: { lat: 23.156481, lng: 72.665470 },
+    coords: { x: 49.5, y: 48.0 },
     token: "OG842X1",
-    clue: "Start at Osail Gazebo pavilion beside the Cricket Ground.",
+    clue: "Start at the central OSAIL Gazebo pavilion beside the Cricket Ground.",
     puzzle: {
-      question: "Search the area around OSAIL Gazebo. A cryptic transmission points to the next sector: Where engineering students gather near the substation, shaded between the academic blocks. Enter the destination name:",
-      type: "text",
+      type: "cipher",
+      category: "ROT-3 Shift Cipher",
+      question: "DECODE INTERCEPTED BEACON: Emergency transmission received on frequency 104.3. Decrypt ciphertext 'G E O R F N' using ROT-3 (Shift each letter 3 positions backward in the alphabet: D->A, E->B...):",
+      cipherText: "G E O R F N",
+      shiftKey: "-3 (ROT-3)",
       answer: "D Block",
-      hint: "Head east towards D Block Gazebo (between D Block and C Block)."
+      hint: "G shifted back 3 is D. E shifted back 3 is B. O shifted back 3 is L. Spells the next building block!"
     },
     acceptedAnswers: [
-      "dblock", "d block", "dgazebo", "d gazebo", "d-block", "dbock", "dblockgazebo", "d", "d block gazebo"
+      "dblock", "d block", "d-block", "dgazebo", "d gazebo", "d block gazebo", "dblockgazebo", "d"
     ],
     decoyPuzzle: {
-      question: "Enter the serial number etched onto the electrical conduit beneath the central canopy lamp: [HEX-CODE]",
+      question: "Input the 6-character relay serial from the central electrical conduit beneath the canopy: [HEX: 0xFD42]",
       type: "text",
-      hint: "Look straight up into the ceiling rafters."
+      hint: "Check the overhead ceiling junction."
     }
   },
   {
@@ -163,126 +123,158 @@ export const LOCATIONS = [
     order: 2,
     name: "D Block Gazebo",
     shortName: "D Gazebo",
-    coords: { x: 69.8, y: 60.5 },
-    gps: { lat: 23.155232, lng: 72.666355 },
+    coords: { x: 74.5, y: 64.0 },
     token: "DG519K2",
-    clue: "Navigate east between D Block and C Block. Find D Gazebo.",
+    clue: "Navigate east between D Block and C Block to locate D Block Gazebo.",
     puzzle: {
-      question: "Decode the beacon at D Block Gazebo: Follow the pathway into the sheltered courtyard of the chemical and petroleum wing. Enter the next destination:",
-      type: "text",
-      answer: "C Block",
-      hint: "The next station is C Block Gazebo in the adjacent courtyard."
+      type: "sudoku",
+      category: "4x4 Reactor Sudoku",
+      question: "REACTOR CORE BALANCE: Complete the 4x4 energy Sudoku grid. Digits 1 to 4 cannot repeat in any row, column, or 2x2 quadrant. Find the missing values in cells [A], [B], [C], and [D]. Enter the 4-digit security code [ABCD]:",
+      grid: [
+        [1, 2, 3, "A"],
+        [3, "B", 1, 2],
+        ["C", 1, 4, 3],
+        [4, 3, "D", 1]
+      ],
+      answer: "4422",
+      hint: "Row 1 is missing 4 (A=4). Row 2 is missing 4 (B=4). Row 3 is missing 2 (C=2). Row 4 is missing 2 (D=2). Code = 4422!"
     },
     acceptedAnswers: [
-      "cblock", "c block", "cgazebo", "c gazebo", "c-block", "cbock", "cblockgazebo", "c", "c block gazebo"
+      "4422", "4 4 2 2", "4,4,2,2", "4-4-2-2", "germi", "germistage", "germi stage"
     ],
     decoyPuzzle: {
-      question: "Count the total number of red patterned paver stones forming the ramp entry.",
+      question: "Count the exact number of red concrete paver blocks forming the gazebo foundation ramp.",
       type: "number",
-      hint: "Pavements can be tricky to count!"
+      hint: "Recount carefully from left to right."
+    }
+  },
+  {
+    id: "germi",
+    order: 3,
+    name: "Germi",
+    shortName: "Germi",
+    coords: { x: 59.4, y: 76.8 },
+    token: "GM388Z3",
+    clue: "Proceed south into the courtyard amphitheater stage of D Block (Germi).",
+    puzzle: {
+      type: "kenken",
+      category: "3x3 Oxygen KenKen",
+      question: "OXYGEN RECYCLER HARMONIC: Solve the 3x3 KenKen grid using digits 1, 2, and 3 (no repeats in any row or column). Cages: Top-Left (3+), Top-Right (6x), Mid-Left (1-), Center (4+), Bottom-Right (1). What is the sequence of digits in the BOTTOM ROW (Row 3, left to right)?",
+      gridSize: 3,
+      cages: [
+        { label: "3+", cells: [[0,0], [0,1]] },
+        { label: "6x", cells: [[0,2], [1,2]] },
+        { label: "1-", cells: [[1,0], [2,0]] },
+        { label: "4+", cells: [[1,1], [2,1]] },
+        { label: "1",  cells: [[2,2]] }
+      ],
+      answer: "231",
+      hint: "Top-right cage '6x' is 3 × 2. Bottom-right cage '1' is 1. The bottom row from left to right is 2, 3, 1."
+    },
+    acceptedAnswers: [
+      "231", "2 3 1", "2,3,1", "2-3-1", "c block", "cblock", "c gazebo", "cgazebo", "c-block", "c block gazebo"
+    ],
+    decoyPuzzle: {
+      question: "Enter the sound resonance tuning frequency (in kHz) marked on backstage amplifier panel #3.",
+      type: "text",
+      hint: "Check behind the stage wing."
     }
   },
   {
     id: "cblock-gazebo",
-    order: 3,
+    order: 4,
     name: "C Block Gazebo",
     shortName: "C Gazebo",
-    coords: { x: 74.8, y: 63.8 },
-    gps: { lat: 23.154995, lng: 72.666600 },
-    token: "CG773M3",
-    clue: "Walk into the inner courtyard of C Block to find C Gazebo.",
+    coords: { x: 80.7, y: 72.0 },
+    token: "CG773M4",
+    clue: "Walk into the sheltered courtyard plaza of C Block to reach C Block Gazebo.",
     puzzle: {
-      question: "Signal intercepted at C Gazebo! The coordinates direct you northeast to the main academic atrium where curved amphitheater benches surround the plaza. Enter the destination:",
-      type: "text",
+      type: "crossword",
+      category: "Mainframe Crossword",
+      question: "CAMPUS SECURITY MAINFRAME: Solve the crossword clues. Clue 1 Across [A BLOCK] intersects with Clue 1 Down [SEATING] outside the main academic wing. Enter the combined next destination name:",
+      crosswordClues: {
+        across: [
+          "1 Across: Main academic building wing facing the lawn (6 letters): A B L O C K",
+          "3 Across: Non-impostor astronaut team member (4 letters): C R E W"
+        ],
+        down: [
+          "1 Down: Open outdoor curved amphitheater steps where students rest (7 letters): S E A T I N G",
+          "2 Down: Loud siren triggered during emergency meeting (5 letters): A L A R M"
+        ]
+      },
       answer: "A Seating",
-      hint: "Look for the open curved seating outside A Block."
+      hint: "Combining 1 Across (A BLOCK) and 1 Down (SEATING) directs you to 'A SEATING'!"
     },
     acceptedAnswers: [
-      "aseating", "a seating", "ablock", "a block", "ablockseating", "a-seating", "a-block", "a", "a seating area"
+      "aseating", "a seating", "ablockseating", "a block seating", "a-seating", "ablock", "a block", "seating", "a seating area"
     ],
     decoyPuzzle: {
-      question: "Transcribe the Roman numerals on the concrete base foundation stone.",
-      type: "text",
-      hint: "Examine the low foundation blocks."
+      question: "Count the number of steel hexagonal bolts securing the perimeter gazebo canopy braces.",
+      type: "number",
+      hint: "Look under the roof eaves."
     }
   },
   {
     id: "ablock-seating",
-    order: 4,
+    order: 5,
     name: "A Block Seating",
     shortName: "A Seating",
-    coords: { x: 84.5, y: 25.5 },
-    gps: { lat: 23.156083, lng: 72.667754 },
-    token: "AS312P4",
-    clue: "Proceed northeast towards the open curved amphitheater outside A Block.",
+    coords: { x: 92.5, y: 32.3 },
+    token: "AS312P5",
+    clue: "Head northeast to the curved open-air amphitheater benches outside A Block.",
     puzzle: {
-      question: "Decrypted from A Block Seating: Head northwest across the central lawns to the student residential and dining zone where the large canopy float stands. Enter the destination:",
-      type: "text",
+      type: "matrix",
+      category: "5x5 Grid Coordinate Cipher",
+      question: "SUB-LEVEL TELEMETRY CIPHER: Using (Row, Column) lookups in the 5x5 Grid Matrix, decipher the coordinate pairs: (1,1), (1,2), (1,3), (1,3). Which central student dining facility is the final beacon located on Floor 1?",
+      matrix: [
+        ["M", "E", "S", "F", "L"],
+        ["O", "R", "A", "B", "C"],
+        ["D", "G", "H", "I", "K"],
+        ["N", "P", "Q", "T", "U"],
+        ["V", "W", "X", "Y", "Z"]
+      ],
+      coordsToDecode: "(1,1) (1,2) (1,3) (1,3)",
       answer: "Mess",
-      hint: "Proceed towards the Mess / Ness 1 residence zone."
+      hint: "(Row 1, Col 1) = M. (Row 1, Col 2) = E. (Row 1, Col 3) = S. (Row 1, Col 3) = S. It spells MESS (Mess 1st Floor)!"
     },
     acceptedAnswers: [
-      "mess", "ness", "ness1", "ness 1", "ness1float", "ness float", "mess pavilion", "dining", "ness (mess)", "ness1 float"
+      "mess", "mess 1 floor", "mess 1st floor", "mess1floor", "mess1", "mess 1", "mess floor 1", "cafeteria", "mess and cafeteria"
     ],
     decoyPuzzle: {
-      question: "What room number is directly visible through the first ground-floor faculty office window?",
+      question: "Transcribe the 5-digit room inventory code on the ground-floor faculty door facing the benches.",
       type: "text",
-      hint: "Look through the glass door."
+      hint: "Check through the glass door window."
     }
   },
   {
-    id: "ness1-float",
-    order: 5,
-    name: "Ness 1 Float (Mess)",
-    shortName: "Mess / Ness 1",
-    coords: { x: 50.5, y: 21.8 },
-    gps: { lat: 23.15704505788152, lng: 72.66602395231996 },
-    token: "NF904R5",
-    clue: "Navigate to the northern quad near the dining hall. Spot the Mess / Ness 1 canopy structure.",
-    puzzle: {
-      question: "Emergency broadcast decoded at the Mess: The final ship extraction zone is located south of D Block at the grand amphitheater stage. Enter the final destination:",
-      type: "text",
-      answer: "Gemini Stage",
-      hint: "The grand stage located south of D Block (labeled Gemini Stage / Germi)."
-    },
-    acceptedAnswers: [
-      "gemini", "geministage", "gemini stage", "germi", "germistage", "germi stage", "stage", "gemini amphitheater"
-    ],
-    decoyPuzzle: {
-      question: "Count the total number of braided stainless steel suspension cables in the canopy float.",
-      type: "number",
-      hint: "Look up towards the tension ring."
-    }
-  },
-  {
-    id: "gemini-stage",
+    id: "mess-1-floor",
     order: 6,
-    name: "Gemini Stage (Germi)",
-    shortName: "Gemini Stage",
-    coords: { x: 57.0, y: 76.5 },
-    gps: { lat: 23.154993, lng: 72.665393 },
-    token: "GS661Z6",
-    clue: "Final Station! Reach the grand Gemini Stage / Germi complex directly south of D Block.",
+    name: "Mess 1st Floor",
+    shortName: "Mess 1 Floor",
+    coords: { x: 51.0, y: 27.1 },
+    token: "MF904R6",
+    clue: "Final Station! Reach the Mess & Cafeteria (1st Floor dining hall).",
     puzzle: {
-      question: "FINAL EMERGENCY TERMINAL AT GEMINI STAGE: Input the master extraction override code to clear the final station and transmit debrief:",
-      type: "text",
-      answer: "FINISH",
-      hint: "Enter FINISH or COMPLETE to conclude your campus run!"
+      type: "master-override",
+      category: "Final Extraction Protocol",
+      question: "FINAL SHIP EXTRACTION PROTOCOL: You have scouted all 6 campus sectors! To purge the rogue infection, trigger ship extraction, and log your crew's official survival time on the organizer leaderboard, enter the mission victory passcode:",
+      answer: "VICTORY",
+      hint: "Type VICTORY, FINISH, or SURVIVE to log your mission completion!"
     },
     acceptedAnswers: [
-      "finish", "complete", "done", "victory", "crew", "amongus", "win", "extracted", "survived"
+      "victory", "finish", "survive", "extract", "amongus", "done", "complete", "win", "survived", "mess"
     ],
     decoyPuzzle: {
-      question: "Input the 6-character emergency broadcast serial code found on the backstage power distribution box.",
+      question: "Enter the 8-digit fire extinguisher inspection seal code mounted beside the dining hall stairs.",
       type: "text",
-      hint: "Behind the backstage wing."
+      hint: "Inspect the wall mount plate."
     }
   }
 ];
 
 // Generate 6-letter Among Us style room code (e.g. "SKELDX")
 export function generateRoomCode() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ"; // 24 letters (no I or O to prevent confusion)
   let code = "";
   for (let i = 0; i < 6; i++) {
     code += chars[Math.floor(Math.random() * chars.length)];
@@ -335,7 +327,7 @@ function levenshteinDistance(a, b) {
 
 /**
  * Super forgiving answer checker:
- * Accepts uppercase, lowercase, spaces, hyphens, slashes, typos (e.g. "D Block", "dblock", "dbock", "d block")
+ * Accepts uppercase, lowercase, spaces, hyphens, slashes, typos (e.g. "D Block", "dblock", "dbock")
  */
 export function isAnswerCorrect(userAnswer, targetAnswer, acceptedList = []) {
   if (!userAnswer) return false;

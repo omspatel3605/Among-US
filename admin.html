@@ -80,6 +80,7 @@
           <span>Active Crews: <strong id="count-total-teams" style="color:#fff;">0</strong></span>
         </div>
         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <input type="text" id="search-teams" class="input" placeholder="🔍 Search room or player..." style="height:36px; font-size:12px; width:180px;">
           <select id="sort-select" class="input" style="height:36px; padding:0 8px; font-size:12px; width:auto;">
             <option value="score">Sort: Team Score</option>
             <option value="impostorScore">Sort: Impostor Score</option>
@@ -147,9 +148,12 @@
     <section id="tab-puzzle-editor" class="tab-content">
       <div class="card non-printable">
         <h3 class="card-heading" style="color:var(--purple);">✏️ Station Puzzles &amp; Decoys Editor</h3>
-        <p style="color:var(--muted); font-size:12px; margin-bottom:16px;">
+        <p style="color:var(--muted); font-size:12px; margin-bottom:14px;">
           Edit questions, answers, and decoy questions directly in Firestore without touching code.
         </p>
+        <button id="btn-sync-config-puzzles" class="btn-primary" style="margin-bottom:16px; height:42px; font-size:13px; background:linear-gradient(135deg, #6b2fbc, #38fedc); color:#000;">
+          ⚡ Sync All 6 Puzzles from Config to Database
+        </button>
         <div id="puzzles-editor-list" style="display:flex; flex-direction:column; gap:14px;"></div>
       </div>
     </section>
@@ -243,15 +247,24 @@
       const tbody = document.getElementById("teams-table-body");
       const countEl = document.getElementById("count-total-teams");
       const sortBy = document.getElementById("sort-select").value;
+      const searchQuery = (document.getElementById("search-teams")?.value || "").toLowerCase().trim();
 
       countEl.textContent = liveTeams.length;
 
       if (!liveTeams.length) {
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:20px; color:var(--muted);">No crews joined yet. Tell players to open index.html and create a crew!</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:20px; color:var(--muted);">No crews joined yet. Tell players to open index.html and create a crew! (Expecting 40+ crews)</td></tr>`;
         return;
       }
 
-      const sorted = [...liveTeams].sort((a, b) => {
+      let filtered = [...liveTeams];
+      if (searchQuery) {
+        filtered = filtered.filter(t => {
+          const players = (t.players || []).map(p => p.name || "").join(" ").toLowerCase();
+          return String(t.id).toLowerCase().includes(searchQuery) || players.includes(searchQuery);
+        });
+      }
+
+      const sorted = filtered.sort((a, b) => {
         if (sortBy === "score") return (b.score || 0) - (a.score || 0);
         if (sortBy === "impostorScore") return (b.impostorScore || 0) - (a.impostorScore || 0);
         if (sortBy === "location") return (b.currentLocationIndex || 1) - (a.currentLocationIndex || 1);
@@ -317,6 +330,7 @@
     }
 
     document.getElementById("sort-select").addEventListener("change", renderLiveTable);
+    document.getElementById("search-teams")?.addEventListener("input", renderLiveTable);
     document.getElementById("btn-refresh-data").addEventListener("click", () => {
       sound.click();
       renderLiveTable();
@@ -456,6 +470,23 @@
       window.print();
     });
 
+    // Sync All Config Puzzles to Firestore
+    document.getElementById("btn-sync-config-puzzles")?.addEventListener("click", async () => {
+      sound.click();
+      if (!confirm("Sync all 6 puzzle definitions from config.js to Firestore? This will overwrite any manual edits.")) return;
+      let count = 0;
+      for (const loc of LOCATIONS) {
+        try {
+          await firebaseService.saveLocation(loc);
+          count++;
+        } catch (e) {
+          console.warn("Failed to sync location:", loc.id, e);
+        }
+      }
+      showToast(`Synced ${count}/6 station puzzles to database!`, "success");
+      renderPuzzleEditor();
+    });
+
     // Puzzles Editor
     async function renderPuzzleEditor() {
       const editorList = document.getElementById("puzzles-editor-list");
@@ -470,15 +501,18 @@
         card.style.padding = "14px";
 
         card.innerHTML = `
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:6px;">
             <strong style="color:var(--cyan); font-family:var(--font-display);">${loc.order}. ${loc.name}</strong>
-            <span class="mono" style="font-size:11px; color:var(--yellow);">Token: ${loc.token}</span>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              <span class="mono" style="font-size:10px; color:var(--purple); background:rgba(107,47,188,0.2); border:1px solid var(--purple); padding:2px 8px; border-radius:99px;">${loc.puzzle?.type?.toUpperCase() || 'TEXT'} – ${loc.puzzle?.category || '—'}</span>
+              <span class="mono" style="font-size:11px; color:var(--yellow);">Token: ${loc.token}</span>
+            </div>
           </div>
 
           <div style="display:flex; flex-direction:column; gap:10px;">
             <div>
               <label class="form-label" style="font-size:10px;">REAL PUZZLE QUESTION</label>
-              <textarea class="input" id="edit-q-${loc.id}" rows="2" style="height:auto; padding:8px; font-size:13px;">${loc.puzzle?.question || ''}</textarea>
+              <textarea class="input" id="edit-q-${loc.id}" rows="3" style="height:auto; padding:8px; font-size:13px;">${loc.puzzle?.question || ''}</textarea>
             </div>
 
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">

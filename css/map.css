@@ -1,5 +1,7 @@
 /**
- * Mobile-First Among Us Campus Radar & Map Styles
+ * Mobile-First Campus Radar Map Styles
+ * Optimized for PDEU Campus Masterplan (2000x1438)
+ * Glowing Sci-Fi Location Radar Markers, Non-Overlapping Mobile HUD, and Gesture Viewport
  */
 
 .map-page-body {
@@ -9,6 +11,7 @@
   overflow: hidden;
   position: fixed;
   inset: 0;
+  background: #090a14;
 }
 
 #map-container, .map-viewport {
@@ -17,7 +20,7 @@
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: #090a14;
+  background: #080912;
   cursor: grab;
   user-select: none;
   touch-action: none;
@@ -27,32 +30,21 @@
   position: absolute;
   top: 0;
   left: 0;
-  width: 1024px;
-  height: 707px;
+  width: 2000px;
+  height: 1438px;
   transform-origin: 0 0;
-  transition: transform 0.08s ease-out;
+  transition: transform 0.06s ease-out;
   border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
 }
 
 .map-background-img {
-  width: 1024px;
-  height: 707px;
+  width: 2000px;
+  height: 1438px;
   object-fit: fill;
   display: block;
   pointer-events: none;
   border-radius: 12px;
-}
-
-/* SVG Walking Paths (Hidden per user specification) */
-.map-paths-svg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 10;
-  display: none;
 }
 
 /* Pins Layer */
@@ -65,71 +57,11 @@
   z-index: 20;
 }
 
-/* Real-Time Player Avatars Layer */
-.map-players-layer {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 30;
-}
+/* ===================================================
+   GLOWING RADAR LOCATION MARKERS (No Characters)
+   =================================================== */
 
-.player-avatar-marker {
-  position: absolute;
-  transform: translate(-50%, -100%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  pointer-events: none;
-  transition: left 0.35s ease, top 0.35s ease;
-  z-index: 35;
-}
-
-.player-avatar-me {
-  z-index: 45;
-}
-
-.player-avatar-bean {
-  position: relative;
-  width: 32px;
-  height: 40px;
-  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.8));
-}
-
-.player-mini-bean {
-  width: 100%;
-  height: 100%;
-}
-
-.player-avatar-nametag {
-  background: rgba(14, 16, 33, 0.95);
-  border: 2px solid var(--border);
-  border-radius: var(--radius-pill);
-  padding: 2px 8px;
-  font-family: var(--font-display);
-  font-size: 10px;
-  color: #ffffff;
-  white-space: nowrap;
-  margin-top: 2px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
-}
-
-.player-avatar-pulse {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 48px;
-  height: 48px;
-  border: 2px solid var(--cyan);
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  animation: radar-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
-  pointer-events: none;
-}
-
-/* Among Us Bean Pin Marker */
-.amongus-pin {
+.location-radar-marker {
   position: absolute;
   transform: translate(-50%, -100%);
   display: flex;
@@ -139,88 +71,171 @@
   cursor: pointer;
   touch-action: manipulation;
   z-index: 25;
+  transition: transform 0.2s ease;
 }
 
-.pin-marker {
-  position: relative;
-  width: 48px;
-  height: 56px;
-  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.8));
+.location-radar-marker:active {
+  transform: translate(-50%, -100%) scale(1.08);
 }
 
-.bean-svg {
-  width: 100%;
-  height: 100%;
-}
-
-.pin-order-badge {
+/* Outer Pulsing Concentric Radar Rings */
+.location-pulse-ring {
   position: absolute;
-  top: -4px;
-  right: -4px;
-  background: #ffffff;
-  color: #0c0d1a;
-  font-family: var(--font-display);
-  font-size: 11px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
-  border: 1.5px solid #000;
-}
-
-/* Pin States */
-.pin-completed .bean-body { fill: var(--green); }
-.pin-completed .bean-visor { fill: var(--green-light); }
-.pin-completed .pin-order-badge { background: var(--green-light); color: #000; }
-
-.pin-active .bean-body {
-  fill: var(--cyan);
-  animation: pulse-bean 1.6s infinite alternate;
-}
-.pin-active .bean-visor { fill: #ffffff; }
-.pin-active .pin-order-badge { background: var(--yellow); color: #000; }
-.pin-active .pin-beacon { display: block; }
-
-.pin-locked {
-  display: none !important; /* HIDE FUTURE STATIONS ENTIRELY */
-}
-
-.pin-scrambled {
-  animation: scramble-jitter 0.25s infinite;
-}
-.pin-scrambled .bean-body { fill: var(--orange); }
-.pin-scrambled .bean-visor { fill: var(--yellow); }
-.pin-scrambled .pin-beacon {
-  display: block;
-  border-color: var(--orange);
-}
-
-.pin-beacon {
-  display: none;
-  position: absolute;
-  top: 50%;
+  top: 24px;
   left: 50%;
-  width: 74px;
-  height: 74px;
+  width: 80px;
+  height: 80px;
   border: 2px solid var(--cyan);
   border-radius: 50%;
   transform: translate(-50%, -50%);
-  animation: radar-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+  animation: radar-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+  pointer-events: none;
+  z-index: -2;
+  opacity: 0.8;
+}
+
+.location-pulse-ring.ring-delay {
+  animation-delay: 0.9s;
+}
+
+/* Glowing Area Halo beneath Marker */
+.location-beacon-halo {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  background: radial-gradient(circle, rgba(56, 254, 220, 0.45) 0%, rgba(56, 254, 220, 0) 70%);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
   pointer-events: none;
   z-index: -1;
+  animation: halo-pulse 2s ease-in-out infinite alternate;
 }
 
+/* Modern Sci-Fi Drop Pin */
+.location-marker-pin {
+  position: relative;
+  width: 42px;
+  height: 48px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2.5px solid #ffffff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), 0 0 16px rgba(56, 254, 220, 0.6);
+}
+
+.marker-pin-svg {
+  display: none;
+}
+
+/* Pin Center Number Badge */
+.location-order-badge {
+  transform: rotate(45deg);
+  font-family: var(--font-display);
+  font-size: 15px;
+  color: #0b0e14;
+  font-weight: 800;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Station Name Card */
+.marker-label-card {
+  margin-top: 6px;
+  background: rgba(12, 14, 28, 0.95);
+  border: 2px solid var(--border-active);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  text-align: center;
+  white-space: nowrap;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+.marker-label-name {
+  font-family: var(--font-display);
+  font-size: 12px;
+  color: #ffffff;
+  letter-spacing: 0.3px;
+}
+
+.marker-label-status {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--cyan);
+  letter-spacing: 0.6px;
+  font-weight: 700;
+}
+
+/* Marker State Variants */
+.marker-completed .location-marker-pin {
+  border-color: #ffffff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), 0 0 16px rgba(80, 239, 57, 0.6);
+}
+.marker-completed .location-pulse-ring {
+  display: none;
+}
+.marker-completed .location-beacon-halo {
+  background: radial-gradient(circle, rgba(80, 239, 57, 0.3) 0%, transparent 70%);
+}
+.marker-completed .marker-label-card {
+  border-color: var(--green-light);
+}
+.marker-completed .marker-label-status {
+  color: var(--green-light);
+}
+
+.marker-active .location-pulse-ring {
+  border-color: var(--cyan);
+}
+.marker-active .location-marker-pin {
+  animation: pin-bob 1.8s ease-in-out infinite alternate;
+}
+
+.marker-scrambled {
+  animation: scramble-jitter 0.25s infinite;
+}
+.marker-scrambled .location-pulse-ring {
+  border-color: var(--orange);
+}
+.marker-scrambled .location-marker-pin {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), 0 0 16px rgba(239, 125, 14, 0.8);
+}
+.marker-scrambled .marker-label-card {
+  border-color: var(--orange);
+}
+.marker-scrambled .marker-label-status {
+  color: var(--orange);
+}
+
+.marker-locked {
+  display: none !important; /* Future stations remain completely hidden! */
+}
+
+/* Radar Pulse Animations */
 @keyframes radar-ping {
-  0% { transform: translate(-50%, -50%) scale(0.3); opacity: 1; }
-  100% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; }
+  0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0.9; }
+  100% { transform: translate(-50%, -50%) scale(2.0); opacity: 0; }
 }
 
-@keyframes pulse-bean {
-  0% { filter: drop-shadow(0 0 6px rgba(56, 254, 220, 0.6)); }
-  100% { filter: drop-shadow(0 0 20px rgba(56, 254, 220, 1)); }
+@keyframes halo-pulse {
+  0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.5; }
+  100% { transform: translate(-50%, -50%) scale(1.3); opacity: 0.9; }
+}
+
+@keyframes pin-bob {
+  0% { transform: rotate(-45deg) translate(0, 0); }
+  100% { transform: rotate(-45deg) translate(2px, -4px); }
 }
 
 @keyframes scramble-jitter {
@@ -229,46 +244,124 @@
   75% { transform: translate(-48%, -101%) rotate(2deg); }
 }
 
-.pin-card {
-  margin-top: 3px;
+/* ===================================================
+   OPTIMIZED FLOATING HUD CARD (Docked inside Map)
+   Fixes issue: NEVER overlaps the top navigation bar!
+   =================================================== */
+
+.map-hud {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  max-width: 440px;
+  margin: 0 auto;
   background: rgba(14, 16, 33, 0.94);
-  border: 2px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 3px 8px;
-  text-align: center;
-  white-space: nowrap;
-  backdrop-filter: blur(6px);
+  border: 2px solid var(--border-active);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  z-index: 120;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.65);
+  pointer-events: auto;
+  transition: all 0.25s ease;
 }
 
-.pin-name {
+.hud-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.hud-top-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hud-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 10px var(--cyan);
+  flex-shrink: 0;
+}
+
+.hud-label {
   font-family: var(--font-display);
   font-size: 11px;
-  color: var(--white);
-}
-
-.pin-status-text {
-  font-family: var(--font-mono);
-  font-size: 9px;
   color: var(--cyan);
-  letter-spacing: 0.5px;
+  letter-spacing: 0.6px;
 }
 
-/* FLOATING PAN-ZOOM CONTROLS (Right Edge) */
+/* Quick collapse/expand button for small mobile screens */
+.hud-collapse-btn {
+  background: var(--bg-panel-light);
+  border: 1px solid var(--border);
+  color: var(--white);
+  border-radius: 6px;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.hud-content {
+  margin-top: 4px;
+  transition: max-height 0.2s ease, opacity 0.2s ease;
+}
+
+.map-hud.is-collapsed .hud-content {
+  display: none;
+}
+
+.map-hud.is-collapsed {
+  padding: 8px 12px;
+  border-radius: var(--radius-pill);
+}
+
+.hud-name {
+  font-family: var(--font-display);
+  font-size: 15px;
+  color: #ffffff;
+  line-height: 1.25;
+}
+
+.hud-clue {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 3px;
+  line-height: 1.35;
+}
+
+/* ===================================================
+   FLOATING PAN-ZOOM CONTROLS (Right Edge)
+   Properly spaced above bottom Scan button & nav bars
+   =================================================== */
+
 .map-floating-controls {
   position: absolute;
   right: 14px;
-  bottom: 96px;
+  bottom: calc(88px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   gap: 8px;
   z-index: 100;
+  pointer-events: auto;
 }
 
 .map-ctrl-btn {
-  width: 46px;
-  height: 46px;
+  width: 44px;
+  height: 44px;
   border-radius: var(--radius-sm);
-  background: rgba(22, 24, 46, 0.92);
+  background: rgba(22, 24, 46, 0.94);
   border: 2px solid var(--border);
   color: var(--white);
   font-family: var(--font-display);
@@ -278,7 +371,8 @@
   justify-content: center;
   cursor: pointer;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(8px);
+  touch-action: manipulation;
 }
 
 .map-ctrl-btn:active {
@@ -286,66 +380,10 @@
   color: #000;
 }
 
-.map-ctrl-btn.active {
-  background: var(--yellow);
-  color: #000;
-  border-color: #000;
-}
+/* ===================================================
+   CAMERA SCANNER OVERLAY
+   =================================================== */
 
-/* FLOATING HUD CARD (Top Center) */
-.map-hud {
-  position: absolute;
-  top: 10px;
-  left: 12px;
-  right: 12px;
-  max-width: 440px;
-  margin: 0 auto;
-  background: rgba(14, 16, 33, 0.94);
-  border: 2px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 10px 14px;
-  z-index: 100;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
-}
-
-.hud-top {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 2px;
-}
-
-.hud-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--cyan);
-  box-shadow: 0 0 8px var(--cyan);
-}
-
-.hud-label {
-  font-family: var(--font-display);
-  font-size: 11px;
-  color: var(--cyan);
-  letter-spacing: 0.5px;
-}
-
-.hud-name {
-  font-family: var(--font-display);
-  font-size: 16px;
-  color: #ffffff;
-  line-height: 1.2;
-}
-
-.hud-clue {
-  font-size: 12px;
-  color: var(--muted);
-  margin-top: 3px;
-  line-height: 1.3;
-}
-
-/* LIVE CAMERA SCANNER OVERLAY */
 .scanner-overlay {
   position: fixed;
   inset: 0;
@@ -411,13 +449,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: linear-gradient(180deg, rgba(0,0,0,0.8), transparent);
+  background: linear-gradient(180deg, rgba(0,0,0,0.85), transparent);
   z-index: 10;
 }
 
 .scanner-bottom-hint {
   position: absolute;
-  bottom: 40px;
+  bottom: calc(36px + env(safe-area-inset-bottom, 0px));
   left: 0;
   right: 0;
   text-align: center;

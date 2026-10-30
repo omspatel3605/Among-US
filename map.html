@@ -15,7 +15,7 @@
 </head>
 <body class="map-page-body">
 
-  <!-- Mobile Header -->
+  <!-- Mobile Header (Navigation Bar) -->
   <header class="app-header">
     <div class="header-left">
       <span class="header-icon">📡</span>
@@ -25,7 +25,7 @@
       </div>
     </div>
     <div class="header-right">
-      <button id="btn-gps-toggle" class="btn-icon" onclick="recenterGPS()" title="My Location">📍</button>
+      <button id="btn-recenter" class="btn-icon" onclick="recenterMap()" title="Recenter Campus Map">⟲</button>
       <button id="btn-daylight" class="btn-icon" onclick="toggleDaylight()" title="Contrast">☀️</button>
       <button id="btn-snd" class="btn-icon" onclick="toggleSnd()" title="Sound">🔊</button>
     </div>
@@ -41,16 +41,21 @@
   </div>
 
   <!-- Map Viewport -->
-  <div id="map-container"></div>
-
-  <!-- Floating HUD Card (Current Objective Only) -->
-  <div class="map-hud" id="hud">
-    <div class="hud-top">
-      <span id="hud-dot" class="hud-dot"></span>
-      <span id="hud-label" class="hud-label">TARGET STATION 1 OF 6</span>
+  <div id="map-container">
+    <!-- Floating HUD Card (Docked INSIDE Map Viewport to avoid covering top navbar) -->
+    <div class="map-hud" id="hud">
+      <div class="hud-top">
+        <div class="hud-top-left">
+          <span id="hud-dot" class="hud-dot"></span>
+          <span id="hud-label" class="hud-label">TARGET STATION 1 OF 6</span>
+        </div>
+        <button id="hud-toggle-btn" class="hud-collapse-btn" onclick="toggleHudCollapse(event)" title="Minimize or Expand">▲</button>
+      </div>
+      <div class="hud-content" id="hud-content">
+        <div id="hud-name" class="hud-name">OSAIL Gazebo</div>
+        <div id="hud-clue" class="hud-clue">Start at the central OSAIL Gazebo pavilion beside the Cricket Ground.</div>
+      </div>
     </div>
-    <div id="hud-name" class="hud-name">OSAIL Gazebo</div>
-    <div id="hud-clue" class="hud-clue">Head to the central Osail Gazebo pavilion beside the Cricket Ground.</div>
   </div>
 
   <!-- Floating Scan QR Button (Bottom Center) -->
@@ -74,7 +79,7 @@
     <video id="scanner-video" class="scanner-video-feed" playsinline autoplay muted></video>
     <canvas id="scanner-canvas" style="display:none;"></canvas>
 
-    <!-- Sci-fi Among Us Visor Scanner Frame -->
+    <!-- Sci-fi Visor Scanner Frame -->
     <div class="scanner-frame-box">
       <div class="scanner-corner scanner-tl"></div>
       <div class="scanner-corner scanner-tr"></div>
@@ -85,6 +90,11 @@
 
     <div class="scanner-bottom-hint">
       Point camera at physical Station QR code
+      <div style="margin-top:8px;">
+        <button onclick="promptManualToken()" style="background:rgba(22,24,46,0.9); border:1px solid var(--border); color:var(--cyan); font-family:var(--font-display); font-size:11px; padding:6px 14px; border-radius:14px; cursor:pointer;">
+          ⌨ Manual Code Entry
+        </button>
+      </div>
     </div>
   </div>
 
@@ -92,7 +102,7 @@
     import { firebaseService } from './js/firebase-service.js';
     import { session, displayMode, showToast, vibrate } from './js/app.js';
     import { sound } from './js/sound.js';
-    import { LOCATIONS, gpsToCampusCoords } from './js/config.js';
+    import { LOCATIONS } from './js/config.js';
     import { CampusMapEngine } from './js/map-engine.js';
     import { sabotageEngine } from './js/sabotage-engine.js';
     import { rogueAIEngine } from './js/rogue-ai-engine.js';
@@ -109,52 +119,30 @@
       ${user.teamId} · ${user.playerName} ${roleIcon}
     `;
 
-    // Initialize Map Engine
+    // Initialize Map Engine (with high-res 2000x1438 campus map)
     const mapEngine = new CampusMapEngine(document.getElementById('map-container'), {
       locations: LOCATIONS
     });
 
     let currentTeamData = null;
-    let myLastKnownCoords = { x: 46.5, y: 41.0 };
 
-    // REAL-TIME GPS TRACKING
-    function startGPSTracking() {
-      if (!navigator.geolocation) {
-        console.warn("Geolocation not supported by device.");
-        return;
-      }
-
-      navigator.geolocation.watchPosition(
-        (pos) => {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          const campusCoords = gpsToCampusCoords(lat, lng);
-          myLastKnownCoords = campusCoords;
-
-          // Broadcast to Firestore (throttled)
-          firebaseService.updatePlayerLocation(user.teamId, user.playerId, {
-            ...campusCoords,
-            lat,
-            lng
-          });
-        },
-        (err) => {
-          console.warn("GPS tracking warning:", err.message);
-        },
-        {
-          enableHighAccuracy: true,
-          maximumAge: 3000,
-          timeout: 10000
-        }
-      );
-    }
-    startGPSTracking();
-
-    window.recenterGPS = () => {
+    // Recenter Map view handler
+    window.recenterMap = () => {
       sound.click();
       vibrate([40]);
       mapEngine.resetView();
-      showToast("Centered Campus Radar", "info");
+      showToast("Campus Map Centered", "info");
+    };
+
+    // HUD Collapse / Expand toggle
+    window.toggleHudCollapse = (e) => {
+      e?.stopPropagation();
+      sound.click();
+      const hud = document.getElementById('hud');
+      const btn = document.getElementById('hud-toggle-btn');
+      hud.classList.toggle('is-collapsed');
+      const isCollapsed = hud.classList.contains('is-collapsed');
+      btn.textContent = isCollapsed ? '▼' : '▲';
     };
 
     // Real-Time Firestore Team Updates
@@ -184,17 +172,14 @@
       const scr = team.sabotageState?.mapScramble;
       const isScrambled = scr?.active && scr?.expiresAt > Date.now();
 
-      // Update Map Visuals (Hides future stations, renders live colored player beans)
+      // Update Map Visuals (Hides future locked stations, glows active station)
       mapEngine.updateState({
         currentIndex: idx,
         scrambleState: isScrambled ? scr : null,
-        locations: LOCATIONS,
-        players: team.players || [],
-        currentUserId: user.playerId
+        locations: LOCATIONS
       });
 
       // Update HUD Info
-      const hud = document.getElementById('hud');
       const dot = document.getElementById('hud-dot');
       const label = document.getElementById('hud-label');
       const name = document.getElementById('hud-name');
@@ -205,13 +190,15 @@
         label.textContent = '⚠ RADAR SCRAMBLED';
         label.style.color = '#ef7d0e';
         dot.style.background = '#ef7d0e';
+        dot.style.boxShadow = '0 0 10px #ef7d0e';
         name.textContent = fake.name;
-        clue.textContent = 'Interference detected! Radar signal fluctuating.';
+        clue.textContent = 'Radar interference detected! Target beacon fluctuating.';
       } else {
         const loc = LOCATIONS.find(l => l.order === idx) || LOCATIONS[0];
         label.textContent = `TARGET STATION ${idx} OF ${LOCATIONS.length}`;
         label.style.color = 'var(--cyan)';
         dot.style.background = 'var(--cyan)';
+        dot.style.boxShadow = '0 0 10px var(--cyan)';
         name.textContent = loc.name;
         clue.textContent = loc.clue;
       }
@@ -253,7 +240,7 @@
       try {
         scannerView.classList.remove('hidden');
 
-        // Request back-facing camera
+        // Request environment (back-facing) camera
         cameraStream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: { ideal: "environment" },
@@ -278,7 +265,7 @@
       } catch (err) {
         console.error("Camera access error:", err);
         showToast("Camera error: " + (err.message || "Permission denied"), "error");
-        closeScanner();
+        promptManualToken();
       }
     };
 
@@ -347,17 +334,14 @@
     function handleQRCodeResult(scannedData) {
       if (!scannedData) return false;
 
-      // Check if QR contains station parameters: loc=... and token=...
       if (scannedData.includes('loc=') && scannedData.includes('token=')) {
         sound.success();
         vibrate([80, 40, 140]);
         closeScanner();
 
-        // If it's a full URL, navigate directly
         if (scannedData.startsWith('http://') || scannedData.startsWith('https://')) {
           window.location.href = scannedData;
         } else {
-          // If relative or raw query string
           const query = scannedData.includes('?') ? scannedData.split('?')[1] : scannedData;
           window.location.href = `scan.html?${query}`;
         }
@@ -366,6 +350,20 @@
 
       return false;
     }
+
+    // Manual token entry fallback (ensures no participant is stuck if camera permission denied)
+    window.promptManualToken = () => {
+      closeScanner();
+      const raw = prompt("Enter Station Token Code (found on physical Station QR):");
+      if (!raw) return;
+      const cleanToken = raw.trim().toUpperCase();
+      const matchedLoc = LOCATIONS.find(l => l.token.toUpperCase() === cleanToken);
+      if (matchedLoc) {
+        window.location.href = `scan.html?loc=${matchedLoc.id}&token=${matchedLoc.token}`;
+      } else {
+        showToast("Invalid Station Token", "error");
+      }
+    };
 
     window.addEventListener('beforeunload', () => {
       if (unsub) unsub();

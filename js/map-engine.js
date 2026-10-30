@@ -1,7 +1,8 @@
 /**
- * Interactive Pan-Zoom Among Us Campus Map Engine
- * Supports smooth gesture/mouse pan-zoom, real-time player avatars with Among Us colors,
- * hiding unrevealed future stations, GPS mapping, and Map Scramble sabotage override.
+ * Interactive Pan-Zoom Campus Radar Map Engine
+ * Displays the high-resolution PDEU Campus Masterplan (2000x1438),
+ * sleek glowing radar location markers, smooth touch/mouse gesture pan-zoom,
+ * and handles progressive station unlock & Impostor Map Scramble sabotage.
  */
 
 import { LOCATIONS } from './config.js';
@@ -13,11 +14,12 @@ export class CampusMapEngine {
     this.container = containerEl;
     this.canvasWrapper = null;
     this.pinsContainer = null;
-    this.playersContainer = null;
-    this.pathSvg = null;
+
+    this.naturalWidth = 2000;
+    this.naturalHeight = 1438;
 
     this.scale = 1;
-    this.minScale = 0.4;
+    this.minScale = 0.25;
     this.maxScale = 3.5;
     this.panX = 0;
     this.panY = 0;
@@ -25,7 +27,6 @@ export class CampusMapEngine {
     this.isDragging = false;
     this.startX = 0;
     this.startY = 0;
-    this.initialPinchDistance = null;
 
     this.locations = options.locations || LOCATIONS;
     this.currentLocationIndex = 1;
@@ -39,53 +40,45 @@ export class CampusMapEngine {
   init() {
     this.container.classList.add("map-viewport");
 
-    // Structure
+    // Canvas Wrapper
     this.canvasWrapper = document.createElement("div");
     this.canvasWrapper.className = "map-canvas-wrapper";
 
-    // Campus Map Background (Official PDEU College Map)
+    // Campus Map Background (New Official Masterplan: 2000x1438)
     const mapImg = document.createElement("img");
     mapImg.id = "campus-map-img";
     mapImg.className = "map-background-img";
-    mapImg.src = "assets/images/campus-map.jpg";
+    mapImg.src = "assets/images/Osail Gazebo.png";
     mapImg.alt = "PDEU Campus Masterplan";
 
-    // Fallback error handler
+    // Fallback if needed
     mapImg.onerror = () => {
-      console.warn("Campus map image not found, using vector fallback background.");
-      mapImg.src = "assets/images/campus-map.svg";
+      console.warn("Campus map image failed to load, falling back to encoded path.");
+      mapImg.src = "assets/images/Osail%20Gazebo.png";
     };
 
-    // SVG Walking Path Overlay (Hidden per user requirement)
-    this.pathSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    this.pathSvg.setAttribute("class", "map-paths-svg");
-    this.pathSvg.setAttribute("viewBox", "0 0 100 100");
-    this.pathSvg.setAttribute("preserveAspectRatio", "none");
-
-    // Pins Container
+    // Location Pins Layer
     this.pinsContainer = document.createElement("div");
     this.pinsContainer.className = "map-pins-layer";
 
-    // Real-Time Players Layer (Displays live colored Among Us characters)
-    this.playersContainer = document.createElement("div");
-    this.playersContainer.className = "map-players-layer";
-
     this.canvasWrapper.appendChild(mapImg);
-    this.canvasWrapper.appendChild(this.pathSvg);
     this.canvasWrapper.appendChild(this.pinsContainer);
-    this.canvasWrapper.appendChild(this.playersContainer);
     this.container.appendChild(this.canvasWrapper);
 
-    // Create On-Screen Controls (+, -, Reset, Calibration Toggle)
+    // Create On-Screen Controls (+, -, Reset)
     this.renderControls();
 
     // Bind Pan & Zoom Events
     this.bindEvents();
 
-    // Render Initial State
+    // Render Initial Pins & Fit View
     this.renderPins();
-    this.drawWalkingPath();
     this.resetView();
+
+    // Re-adjust view on window resize
+    window.addEventListener("resize", () => {
+      this.resetView();
+    });
   }
 
   renderControls() {
@@ -94,27 +87,29 @@ export class CampusMapEngine {
     controls.innerHTML = `
       <button class="map-ctrl-btn" id="btn-zoom-in" title="Zoom In">+</button>
       <button class="map-ctrl-btn" id="btn-zoom-out" title="Zoom Out">−</button>
-      <button class="map-ctrl-btn" id="btn-zoom-reset" title="Reset View">⟲</button>
-      <button class="map-ctrl-btn ${this.calibrationMode ? 'active' : ''}" id="btn-calibrate-toggle" title="Admin Pin Calibrate">📍</button>
+      <button class="map-ctrl-btn" id="btn-zoom-reset" title="Recenter Map">⟲</button>
     `;
 
     this.container.appendChild(controls);
 
-    controls.querySelector("#btn-zoom-in").addEventListener("click", () => this.zoom(0.25));
-    controls.querySelector("#btn-zoom-out").addEventListener("click", () => this.zoom(-0.25));
-    controls.querySelector("#btn-zoom-reset").addEventListener("click", () => this.resetView());
-    controls.querySelector("#btn-calibrate-toggle").addEventListener("click", (e) => {
-      this.calibrationMode = !this.calibrationMode;
-      e.target.classList.toggle("active", this.calibrationMode);
-      this.renderPins();
-      showToast(this.calibrationMode ? "📍 Calibration Mode ON: Click map to log coordinates!" : "Calibration Mode OFF", "info");
+    controls.querySelector("#btn-zoom-in").addEventListener("click", (e) => {
+      e.stopPropagation();
+      this.zoom(0.25);
+    });
+    controls.querySelector("#btn-zoom-out").addEventListener("click", (e) => {
+      e.stopPropagation();
+      this.zoom(-0.25);
+    });
+    controls.querySelector("#btn-zoom-reset").addEventListener("click", (e) => {
+      e.stopPropagation();
+      this.resetView();
     });
   }
 
   bindEvents() {
     // Mouse Drag
     this.container.addEventListener("mousedown", (e) => {
-      if (e.target.closest(".map-floating-controls") || e.target.closest(".amongus-pin") || e.target.closest(".player-avatar-marker")) return;
+      if (e.target.closest(".map-floating-controls") || e.target.closest(".location-radar-marker")) return;
       this.isDragging = true;
       this.startX = e.clientX - this.panX;
       this.startY = e.clientY - this.panY;
@@ -176,14 +171,13 @@ export class CampusMapEngine {
       this.isDragging = false;
     });
 
-    // Map Click (for Admin Pin Calibration)
+    // Coordinate logging for admin calibration if enabled
     this.canvasWrapper.addEventListener("click", (e) => {
       if (!this.calibrationMode) return;
       const rect = this.canvasWrapper.getBoundingClientRect();
       const xPct = Number((((e.clientX - rect.left) / rect.width) * 100).toFixed(1));
       const yPct = Number((((e.clientY - rect.top) / rect.height) * 100).toFixed(1));
 
-      console.log(`📍 Calibrated Pin Position: coords: { x: ${xPct}, y: ${yPct} }`);
       const coordStr = `{ x: ${xPct}, y: ${yPct} }`;
       navigator.clipboard?.writeText(coordStr);
       showToast(`Logged coords: ${coordStr} (Copied!)`, "info");
@@ -212,12 +206,13 @@ export class CampusMapEngine {
 
   resetView() {
     const containerW = this.container.clientWidth || window.innerWidth;
-    const containerH = this.container.clientHeight || (window.innerHeight - 90);
-    // Auto-fit 1024x707 image
-    const fitScale = Math.max(0.4, Math.min(containerW / 1024, containerH / 707));
+    const containerH = this.container.clientHeight || window.innerHeight;
+
+    // Auto-fit 2000x1438 image to container
+    const fitScale = Math.max(0.2, Math.min(containerW / this.naturalWidth, containerH / this.naturalHeight));
     this.scale = fitScale;
-    this.panX = (containerW - 1024 * this.scale) / 2;
-    this.panY = Math.max(10, (containerH - 707 * this.scale) / 2);
+    this.panX = (containerW - this.naturalWidth * this.scale) / 2;
+    this.panY = (containerH - this.naturalHeight * this.scale) / 2;
     this.applyTransform();
   }
 
@@ -226,21 +221,18 @@ export class CampusMapEngine {
   }
 
   /**
-   * Update team's current progression, sabotage state, and real-time player locations
+   * Update team progression and sabotage state
    */
-  updateState({ currentIndex = 1, scrambleState = null, locations = null, players = [], currentUserId = null }) {
+  updateState({ currentIndex = 1, scrambleState = null, locations = null }) {
     this.currentLocationIndex = currentIndex;
     this.scrambleOverride = scrambleState;
     if (locations) this.locations = locations;
     this.renderPins();
-    this.drawWalkingPath();
-    this.renderPlayers(players, currentUserId);
   }
 
   /**
-   * Render Among Us style bean pins with live radar states
-   * CRITICAL REQUIREMENT: Future stations (stage 2, 3, 4, 5, 6) are 100% HIDDEN!
-   * Players must solve the puzzle to unlock the next destination!
+   * Render Sleek Sci-Fi Location Radar Markers
+   * NOTE: Future stations are completely HIDDEN until team solves the previous puzzle!
    */
   renderPins() {
     this.pinsContainer.innerHTML = "";
@@ -269,99 +261,52 @@ export class CampusMapEngine {
         return; // Do NOT render future pins!
       }
 
-      const pin = document.createElement("div");
-      pin.className = "amongus-pin";
-      pin.style.left = `${loc.coords.x}%`;
-      pin.style.top = `${loc.coords.y}%`;
+      const marker = document.createElement("div");
+      marker.className = `location-radar-marker marker-${status}`;
+      marker.style.left = `${loc.coords.x}%`;
+      marker.style.top = `${loc.coords.y}%`;
 
-      pin.classList.add(`pin-${status}`);
+      const colorGradient = status === 'completed'
+        ? 'linear-gradient(135deg, #50ef39, #117f2d)'
+        : status === 'scrambled'
+        ? 'linear-gradient(135deg, #ef7d0e, #c51111)'
+        : 'linear-gradient(135deg, #38fedc, #0284c7)';
 
-      // Among Us Bean SVG Marker
-      pin.innerHTML = `
-        <div class="pin-beacon"></div>
-        <div class="pin-marker">
-          <svg viewBox="0 0 40 50" class="bean-svg">
-            <rect x="2" y="16" width="7" height="20" rx="3" fill="#0f172a" stroke="#ffffff" stroke-width="2"/>
-            <path d="M 12 10 C 12 4, 34 4, 34 10 L 34 38 C 34 44, 30 46, 26 46 L 24 46 C 21 46, 21 42, 21 38 L 21 38 C 21 42, 19 46, 16 46 L 14 46 C 10 46, 12 40, 12 36 Z" 
-                  class="bean-body" stroke="#ffffff" stroke-width="2.5" />
-            <ellipse cx="26" cy="18" rx="8" ry="5.5" class="bean-visor" stroke="#ffffff" stroke-width="2"/>
-            <ellipse cx="28" cy="16" rx="4" ry="2" fill="#ffffff" opacity="0.6"/>
+      marker.innerHTML = `
+        <div class="location-pulse-ring"></div>
+        <div class="location-pulse-ring ring-delay"></div>
+        <div class="location-beacon-halo"></div>
+        
+        <div class="location-marker-pin" style="background:${colorGradient};">
+          <svg viewBox="0 0 24 24" class="marker-pin-svg">
+            <path fill="#ffffff" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
           </svg>
-          <span class="pin-order-badge">${status === 'completed' ? '✓' : loc.order}</span>
+          <span class="location-order-badge">${status === 'completed' ? '✓' : loc.order}</span>
         </div>
-        <div class="pin-card">
-          <div class="pin-name">${status === 'scrambled' ? '⚠️ ' + loc.name + ' (DECIPHERED)' : loc.name}</div>
-          <div class="pin-status-text">
+
+        <div class="marker-label-card">
+          <div class="marker-label-name">${status === 'scrambled' ? '⚠️ ' + loc.name : loc.name}</div>
+          <div class="marker-label-status">
             ${status === 'completed' ? 'CLEARED' : status === 'active' ? 'ACTIVE TARGET' : status === 'scrambled' ? 'RADAR LOCKED' : 'LOCKED'}
           </div>
         </div>
       `;
 
-      pin.addEventListener("click", () => {
+      marker.addEventListener("click", (e) => {
+        e.stopPropagation();
         sound.click();
-        this.onPinClick(loc, status);
+        this.onMarkerClick(loc, status);
       });
 
-      this.pinsContainer.appendChild(pin);
+      this.pinsContainer.appendChild(marker);
     });
   }
 
-  onPinClick(loc, status) {
+  onMarkerClick(loc, status) {
     if (status === "active" || status === "scrambled") {
-      showToast(`Current Objective: ${loc.name}. Head here and scan QR code!`, "info");
+      showToast(`Current Objective: ${loc.name}. Navigate here and tap SCAN QR!`, "info");
     } else if (status === "completed") {
-      showToast(`Already cleared: ${loc.name}`, "success");
+      showToast(`Station Cleared: ${loc.name}`, "success");
     }
-  }
-
-  /**
-   * User requirement: Do NOT show paths! Players must figure out the path themselves.
-   */
-  drawWalkingPath() {
-    if (this.pathSvg) {
-      this.pathSvg.innerHTML = "";
-    }
-  }
-
-  /**
-   * Real-Time Player Locations with Player Colors!
-   * Shows every teammate's mini Among Us bean character moving on the map live!
-   */
-  renderPlayers(players = [], currentUserId = null) {
-    if (!this.playersContainer) return;
-    this.playersContainer.innerHTML = "";
-
-    players.forEach((player) => {
-      if (!player) return;
-      const coords = player.location || { x: 46.5, y: 41.0 };
-      const isMe = player.playerId === currentUserId;
-      const colorHex = player.color || "#38fedc";
-
-      const playerMarker = document.createElement("div");
-      playerMarker.className = `player-avatar-marker ${isMe ? 'player-avatar-me' : ''}`;
-      playerMarker.style.left = `${coords.x}%`;
-      playerMarker.style.top = `${coords.y}%`;
-
-      playerMarker.innerHTML = `
-        <div class="player-avatar-bean">
-          <svg viewBox="0 0 40 50" class="player-mini-bean">
-            <!-- Backpack -->
-            <rect x="2" y="16" width="7" height="20" rx="3" fill="#0f172a" stroke="#ffffff" stroke-width="2"/>
-            <!-- Body filled with player's color -->
-            <path d="M 12 10 C 12 4, 34 4, 34 10 L 34 38 C 34 44, 30 46, 26 46 L 24 46 C 21 46, 21 42, 21 38 L 21 38 C 21 42, 19 46, 16 46 L 14 46 C 10 46, 12 40, 12 36 Z" 
-                  fill="${colorHex}" stroke="#ffffff" stroke-width="2.5" />
-            <!-- Visor -->
-            <ellipse cx="26" cy="18" rx="8" ry="5.5" fill="#38fedc" stroke="#ffffff" stroke-width="1.5"/>
-            <ellipse cx="28" cy="16" rx="4" ry="2" fill="#ffffff" opacity="0.6"/>
-          </svg>
-          ${isMe ? '<div class="player-avatar-pulse"></div>' : ''}
-        </div>
-        <div class="player-avatar-nametag" style="border-color:${colorHex}">
-          ${isMe ? '★ ' : ''}${player.name || 'Crewmate'}
-        </div>
-      `;
-
-      this.playersContainer.appendChild(playerMarker);
-    });
   }
 }

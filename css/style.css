@@ -411,12 +411,14 @@ h1, h2, h3, h4, .font-display {
 
 /* SIZE SELECTOR (Crew Size Buttons) */
 .size-selector {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .size-btn {
+  flex: 1 1 calc(20% - 8px);
+  min-width: 60px;
   height: 64px;
   background: var(--bg-panel-light);
   border: 3px solid var(--border);
@@ -663,11 +665,11 @@ h1, h2, h3, h4, .font-display {
 /* FLOATING ACTION BUTTON (Scan QR) */
 .fab-scan {
   position: fixed;
-  bottom: 22px;
+  bottom: calc(22px + env(safe-area-inset-bottom, 0px));
   left: 50%;
   transform: translateX(-50%);
   height: 56px;
-  padding: 0 24px;
+  padding: 0 28px;
   background: linear-gradient(135deg, #0284c7, #38fedc);
   border: 3px solid #000;
   border-radius: var(--radius-pill);
@@ -680,6 +682,7 @@ h1, h2, h3, h4, .font-display {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 20px rgba(56, 254, 220, 0.4);
   cursor: pointer;
   z-index: 500;
+  white-space: nowrap;
 }
 
 .fab-scan:active {

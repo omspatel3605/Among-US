@@ -6,6 +6,179 @@
   <meta name="theme-color" content="#121326">
   <title>Station Terminal — PDEU Among Us</title>
   <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* Puzzle Visual Components */
+    .puzzle-visual-box {
+      margin: 12px 0 16px 0;
+      background: var(--bg-space);
+      border: 2px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* 4x4 Mini-Sudoku Grid */
+    .sudoku-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 48px);
+      grid-template-rows: repeat(4, 48px);
+      gap: 2px;
+      background: #38fedc;
+      border: 3px solid #38fedc;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .sudoku-cell {
+      background: #111326;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-display);
+      font-size: 20px;
+      color: #ffffff;
+      user-select: none;
+    }
+    .sudoku-cell.target-cell {
+      background: #2a1f4d;
+      color: var(--yellow);
+      font-weight: 800;
+      box-shadow: inset 0 0 10px rgba(245, 245, 87, 0.4);
+    }
+    .sudoku-cell.border-r { border-right: 3px solid #38fedc; }
+    .sudoku-cell.border-b { border-bottom: 3px solid #38fedc; }
+
+    /* 3x3 KenKen Grid */
+    .kenken-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 64px);
+      grid-template-rows: repeat(3, 64px);
+      gap: 3px;
+      background: #2d325a;
+      border: 3px solid #38fedc;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .kenken-cell {
+      position: relative;
+      background: #111326;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-display);
+      font-size: 20px;
+      color: #ffffff;
+    }
+    .kenken-cell.target-row {
+      background: #1a2342;
+      border: 1px dashed var(--yellow);
+    }
+    .kenken-cage-badge {
+      position: absolute;
+      top: 2px;
+      left: 4px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--cyan);
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    /* 5x5 Polybius Matrix Grid */
+    .matrix-table {
+      border-collapse: collapse;
+      font-family: var(--font-mono);
+      font-size: 14px;
+      text-align: center;
+      margin: 4px auto;
+    }
+    .matrix-table th {
+      padding: 4px 10px;
+      color: var(--yellow);
+      font-weight: 700;
+      border-bottom: 2px solid var(--border);
+    }
+    .matrix-table td {
+      padding: 6px 12px;
+      background: #16182e;
+      border: 1px solid var(--border);
+      color: #ffffff;
+      font-weight: 600;
+    }
+    .matrix-table td.header-col {
+      background: transparent;
+      color: var(--yellow);
+      border: none;
+      font-weight: 700;
+    }
+    .matrix-table td.highlight-cell {
+      background: rgba(56, 254, 220, 0.25);
+      color: var(--cyan);
+      border-color: var(--cyan);
+      font-weight: 800;
+    }
+
+    /* Cipher Banner */
+    .cipher-terminal {
+      width: 100%;
+      background: #080914;
+      border: 2px solid var(--cyan);
+      border-radius: 8px;
+      padding: 12px;
+      font-family: var(--font-mono);
+    }
+    .cipher-signal {
+      font-size: 24px;
+      letter-spacing: 6px;
+      color: var(--yellow);
+      font-weight: 700;
+      text-align: center;
+      margin: 8px 0;
+      text-shadow: 0 0 10px rgba(245, 245, 87, 0.5);
+    }
+    .cipher-rot {
+      font-size: 11px;
+      color: var(--cyan);
+      text-align: center;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+    .cipher-strip {
+      font-size: 10px;
+      color: var(--muted);
+      overflow-x: auto;
+      white-space: nowrap;
+      text-align: center;
+      padding: 4px 0;
+      border-top: 1px dashed var(--border);
+    }
+
+    /* Crossword Layout */
+    .crossword-clues-box {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      font-size: 13px;
+      text-align: left;
+    }
+    .clue-heading {
+      font-family: var(--font-display);
+      font-size: 11px;
+      color: var(--cyan);
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    .clue-item {
+      background: rgba(255, 255, 255, 0.04);
+      padding: 6px 10px;
+      border-radius: 6px;
+      border-left: 3px solid var(--border-active);
+    }
+  </style>
+
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
@@ -28,17 +201,17 @@
     <!-- Loading State -->
     <div id="loading-card" class="card text-center" style="padding:40px 16px;">
       <div style="font-size:48px; margin-bottom:12px;">📡</div>
-      <h3 class="font-display" style="color:var(--cyan); font-size:18px;">VERIFYING BEACON...</h3>
-      <p style="color:var(--muted); font-size:13px; margin-top:6px;">Authenticating physical QR token with satellite network.</p>
+      <h3 class="font-display" style="color:var(--cyan); font-size:18px;">AUTHENTICATING BEACON...</h3>
+      <p style="color:var(--muted); font-size:13px; margin-top:6px;">Connecting to campus station telemetry.</p>
     </div>
 
-    <!-- Error / Order Violation Card -->
+    <!-- Error / Sequence Violation Card -->
     <div id="error-card" class="card text-center hidden" style="border-color:var(--red);">
       <div style="font-size:52px; margin-bottom:12px;">⛔</div>
       <h2 id="error-title" class="font-display" style="color:var(--red); font-size:20px;">ACCESS DENIED</h2>
       <p id="error-desc" style="font-size:14px; margin:14px 0; line-height:1.45;"></p>
       <button class="btn-primary" onclick="window.location.href='map.html'">
-        RETURN TO RADAR
+        RETURN TO CAMPUS RADAR
       </button>
     </div>
 
@@ -57,18 +230,21 @@
         OSAIL Gazebo
       </h2>
       <p id="puzzle-station-clue" style="color:var(--muted); font-size:12px; margin-bottom:14px;">
-        Student Activity Centre
+        Solve the sector puzzle to decipher your next destination.
       </p>
 
       <!-- Question Box -->
-      <div style="background:var(--bg-panel-light); border:2px solid var(--border); border-radius:var(--radius-md); padding:14px; margin-bottom:16px;">
-        <div style="font-family:var(--font-mono); font-size:10px; color:var(--yellow); margin-bottom:6px; letter-spacing:1px;">
+      <div style="background:var(--bg-panel-light); border:2px solid var(--border); border-radius:var(--radius-md); padding:14px; margin-bottom:12px;">
+        <div id="puzzle-task-badge" style="font-family:var(--font-mono); font-size:10px; color:var(--yellow); margin-bottom:6px; letter-spacing:1px;">
           CRYPTOGRAPHIC TASK:
         </div>
-        <p id="puzzle-question" style="font-size:15px; font-weight:600; line-height:1.45;">
-          Loading question...
+        <p id="puzzle-question" style="font-size:14px; font-weight:600; line-height:1.45;">
+          Loading challenge...
         </p>
       </div>
+
+      <!-- Dedicated Puzzle Diagram / Interactive Grid Container -->
+      <div id="puzzle-visual-container" class="puzzle-visual-box"></div>
 
       <!-- Answer Input Form -->
       <form id="puzzle-form">
@@ -93,9 +269,9 @@
       <!-- Hint Accordion -->
       <div style="margin-top:14px; text-align:center;">
         <button id="btn-toggle-hint" class="btn-ghost" style="font-size:12px; padding:6px 14px;" onclick="toggleHint()">
-          💡 Need a Clue?
+          💡 Need a Hint?
         </button>
-        <div id="hint-box" class="hidden" style="margin-top:8px; font-size:12px; color:var(--muted); background:var(--bg-panel-light); padding:10px; border-radius:var(--radius-sm); border:1px solid var(--border);">
+        <div id="hint-box" class="hidden" style="margin-top:8px; font-size:12px; color:var(--muted); background:var(--bg-panel-light); padding:10px; border-radius:var(--radius-sm); border:1px solid var(--border); line-height:1.4;">
           Hint text
         </div>
       </div>
@@ -136,6 +312,7 @@
     const errorCard = document.getElementById("error-card");
     const puzzleCard = document.getElementById("puzzle-card");
     const successCard = document.getElementById("success-card");
+    const puzzleVisualContainer = document.getElementById("puzzle-visual-container");
 
     let currentTeam = null;
     let targetLocation = null;
@@ -144,7 +321,7 @@
 
     async function initScan() {
       if (!locId || !token) {
-        showError("Invalid QR Beacon", "No station or token found in QR code. Scan the official station QR.");
+        showError("Invalid QR Beacon", "No station or token found in QR code. Scan the official physical station QR.");
         return;
       }
 
@@ -164,7 +341,7 @@
 
       // Token check
       if (String(targetLocation.token).trim().toUpperCase() !== String(token).trim().toUpperCase()) {
-        showError("Invalid Token", "Security verification failed for this station. Ensure you scan the authentic QR.");
+        showError("Invalid Token", "Security token verification failed. Scan the authentic station QR code.");
         return;
       }
 
@@ -172,7 +349,7 @@
       const currentIdx = currentTeam.currentLocationIndex || 1;
 
       if (targetLocation.order < currentIdx) {
-        showError("Already Cleared", `Your crew has already completed '${targetLocation.name}'. Head to your next objective on the radar.`);
+        showError("Already Cleared", `Your crew has already completed '${targetLocation.name}'. Check the radar for your current active target!`);
         return;
       }
 
@@ -197,8 +374,6 @@
         rogueAIEngine.handleTeamUpdate(updated);
         renderPuzzleState();
       });
-
-      renderPuzzleState();
     }
 
     function showError(title, msg) {
@@ -218,8 +393,7 @@
 
       document.getElementById("badge-station-num").textContent = `STATION ${targetLocation.order}/${LOCATIONS.length}`;
       document.getElementById("puzzle-station-name").textContent = targetLocation.name;
-      document.getElementById("puzzle-station-clue").textContent =
-        "Solve this location puzzle. Your answer is the next destination.";
+      document.getElementById("puzzle-station-clue").textContent = targetLocation.clue;
 
       const locProgress = currentTeam.progress?.[targetLocation.id] || {};
       wrongAttemptsCount = locProgress.wrongAttempts || 0;
@@ -232,13 +406,209 @@
 
       const qText = document.getElementById("puzzle-question");
       const hText = document.getElementById("hint-box");
+      const taskBadge = document.getElementById("puzzle-task-badge");
 
       if (isDecoyActive) {
+        taskBadge.textContent = "⚠ CORRUPTED PACKET (DECOY):";
+        taskBadge.style.color = "var(--purple)";
         qText.textContent = targetLocation.decoyPuzzle?.question || "Enter master hex clearance code:";
         hText.textContent = targetLocation.decoyPuzzle?.hint || "Inspect surrounding physical structures.";
+        puzzleVisualContainer.innerHTML = `
+          <div style="font-family:var(--font-mono); font-size:13px; color:var(--purple); text-align:center;">
+            [ ENCRYPTED TELEMETRY JAMMED ]<br>
+            <span style="font-size:11px; color:var(--muted);">Sensor data offline. Bypass manually.</span>
+          </div>
+        `;
       } else {
+        taskBadge.textContent = `SECTOR TASK — ${(targetLocation.puzzle?.category || 'CRYPTOGRAPHIC').toUpperCase()}:`;
+        taskBadge.style.color = "var(--yellow)";
         qText.textContent = targetLocation.puzzle?.question || "Solve station riddle.";
         hText.textContent = targetLocation.puzzle?.hint || "Look closely at the surrounding area.";
+        renderVisualPuzzle(targetLocation.puzzle);
+      }
+    }
+
+    // Render Rich Diagram for Puzzle Type
+    function renderVisualPuzzle(puzzle) {
+      puzzleVisualContainer.innerHTML = "";
+      if (!puzzle) return;
+
+      const type = puzzle.type;
+
+      // 1. ROT-3 Shift Cipher
+      if (type === "cipher") {
+        puzzleVisualContainer.innerHTML = `
+          <div class="cipher-terminal">
+            <div class="cipher-rot">ENCRYPTION PROTOCOL: ${puzzle.shiftKey || 'ROT-3 (SHIFT = -3)'}</div>
+            <div class="cipher-signal">${puzzle.cipherText || 'G E O R F N'}</div>
+            <div class="cipher-strip">
+              ALPHABET: A B C D E F G H I J K L M N O P Q R S T U V W X Y Z<br>
+              DECRYPT : . . . A B C D E F G H I J K L M N O P Q R S T U V W
+            </div>
+          </div>
+        `;
+      } 
+      // 2. 4x4 Mini-Sudoku
+      else if (type === "sudoku") {
+        puzzleVisualContainer.innerHTML = `
+          <div style="text-align:center; font-family:var(--font-mono); font-size:11px; color:var(--muted); margin-bottom:8px;">
+            4x4 REACTOR SUDOKU (Digits 1–4 per row, col, and 2x2 box)
+          </div>
+          <div class="sudoku-grid">
+            <!-- Row 1 -->
+            <div class="sudoku-cell">1</div>
+            <div class="sudoku-cell border-r">2</div>
+            <div class="sudoku-cell">3</div>
+            <div class="sudoku-cell target-cell">[A]</div>
+
+            <!-- Row 2 -->
+            <div class="sudoku-cell border-b">3</div>
+            <div class="sudoku-cell border-r border-b target-cell">[B]</div>
+            <div class="sudoku-cell border-b">1</div>
+            <div class="sudoku-cell border-b">2</div>
+
+            <!-- Row 3 -->
+            <div class="sudoku-cell target-cell">[C]</div>
+            <div class="sudoku-cell border-r">1</div>
+            <div class="sudoku-cell">4</div>
+            <div class="sudoku-cell">3</div>
+
+            <!-- Row 4 -->
+            <div class="sudoku-cell">4</div>
+            <div class="sudoku-cell border-r">3</div>
+            <div class="sudoku-cell target-cell">[D]</div>
+            <div class="sudoku-cell">1</div>
+          </div>
+          <div style="margin-top:8px; font-family:var(--font-mono); font-size:12px; color:var(--yellow); font-weight:700;">
+            Code to enter: [A][B][C][D]
+          </div>
+        `;
+      }
+      // 3. 3x3 KenKen Grid
+      else if (type === "kenken") {
+        puzzleVisualContainer.innerHTML = `
+          <div style="text-align:center; font-family:var(--font-mono); font-size:11px; color:var(--muted); margin-bottom:8px;">
+            3x3 KENKEN (Digits 1, 2, 3 per row/col)
+          </div>
+          <div class="kenken-grid">
+            <!-- Row 1 -->
+            <div class="kenken-cell">
+              <span class="kenken-cage-badge">3+</span>
+              1
+            </div>
+            <div class="kenken-cell">
+              2
+            </div>
+            <div class="kenken-cell">
+              <span class="kenken-cage-badge">6×</span>
+              3
+            </div>
+
+            <!-- Row 2 -->
+            <div class="kenken-cell">
+              <span class="kenken-cage-badge">1−</span>
+              3
+            </div>
+            <div class="kenken-cell">
+              <span class="kenken-cage-badge">4+</span>
+              1
+            </div>
+            <div class="kenken-cell">
+              2
+            </div>
+
+            <!-- Row 3 (Target Row) -->
+            <div class="kenken-cell target-row">
+              <span class="kenken-cage-badge">?</span>
+              2
+            </div>
+            <div class="kenken-cell target-row">
+              <span class="kenken-cage-badge">?</span>
+              3
+            </div>
+            <div class="kenken-cell target-row">
+              <span class="kenken-cage-badge">1</span>
+              1
+            </div>
+          </div>
+          <div style="margin-top:8px; font-family:var(--font-mono); font-size:12px; color:var(--yellow); font-weight:700;">
+            Target: Sequence of Row 3 from left to right [2 3 1]
+          </div>
+        `;
+      }
+      // 4. Mini Crossword
+      else if (type === "crossword") {
+        puzzleVisualContainer.innerHTML = `
+          <div class="crossword-clues-box">
+            <div>
+              <div class="clue-heading">ACROSS:</div>
+              <div class="clue-item"><strong>1 Across:</strong> Main academic block facing lawn (6 letters): <strong>A B L O C K</strong></div>
+              <div class="clue-item" style="margin-top:4px;"><strong>3 Across:</strong> Non-impostor astronaut role (4 letters): <strong>C R E W</strong></div>
+            </div>
+            <div>
+              <div class="clue-heading">DOWN:</div>
+              <div class="clue-item"><strong>1 Down:</strong> Curved amphitheater rest benches (7 letters): <strong>S E A T I N G</strong></div>
+              <div class="clue-item" style="margin-top:4px;"><strong>2 Down:</strong> Impostor detection siren (5 letters): <strong>A L A R M</strong></div>
+            </div>
+            <div style="font-family:var(--font-mono); font-size:11px; color:var(--yellow); text-align:center;">
+              Key destination combines 1 Across + 1 Down: [ A SEATING ]
+            </div>
+          </div>
+        `;
+      }
+      // 5. 5x5 Polybius Matrix
+      else if (type === "matrix") {
+        puzzleVisualContainer.innerHTML = `
+          <div style="text-align:center; font-family:var(--font-mono); font-size:11px; color:var(--muted); margin-bottom:6px;">
+            5x5 TELEMETRY MATRIX (Look up Row, Column)
+          </div>
+          <table class="matrix-table">
+            <tr>
+              <th></th>
+              <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th>
+            </tr>
+            <tr>
+              <td class="header-col">1</td>
+              <td class="highlight-cell">M</td><td class="highlight-cell">E</td><td class="highlight-cell">S</td><td>F</td><td>L</td>
+            </tr>
+            <tr>
+              <td class="header-col">2</td>
+              <td>O</td><td>R</td><td>A</td><td>B</td><td>C</td>
+            </tr>
+            <tr>
+              <td class="header-col">3</td>
+              <td>D</td><td>G</td><td>H</td><td>I</td><td>K</td>
+            </tr>
+            <tr>
+              <td class="header-col">4</td>
+              <td>N</td><td>P</td><td>Q</td><td>T</td><td>U</td>
+            </tr>
+            <tr>
+              <td class="header-col">5</td>
+              <td>V</td><td>W</td><td>X</td><td>Y</td><td>Z</td>
+            </tr>
+          </table>
+          <div style="font-family:var(--font-mono); font-size:13px; color:var(--yellow); font-weight:700; margin-top:6px; letter-spacing:1px;">
+            Coords: (1,1) (1,2) (1,3) (1,3)
+          </div>
+        `;
+      }
+      // 6. Final Extraction Console
+      else if (type === "master-override") {
+        puzzleVisualContainer.innerHTML = `
+          <div style="width:100%; text-align:center; font-family:var(--font-mono);">
+            <div style="font-size:36px; margin-bottom:4px;">🚀</div>
+            <div style="font-size:16px; color:var(--green-light); font-weight:800; letter-spacing:1px;">
+              EXTRACTION BEACON SYNCHRONIZED
+            </div>
+            <div style="font-size:12px; color:var(--muted); margin-top:6px;">
+              Stations cleared: 6/6 • Location: Mess 1st Floor
+            </div>
+            <div style="margin-top:10px; background:rgba(80,239,57,0.1); border:1px solid var(--green-light); border-radius:6px; padding:8px; font-size:12px; color:var(--yellow);">
+              Override Passcode: Type <strong>VICTORY</strong> or <strong>FINISH</strong>
+            </div>
+          </div>
+        `;
       }
     }
 
@@ -255,7 +625,7 @@
     };
     if (sound.getMuted()) document.getElementById("btn-snd").textContent = "🔇";
 
-    // Answer submit
+    // Answer submit handler
     document.getElementById("puzzle-form").addEventListener("submit", async (e) => {
       e.preventDefault();
       sound.click();
@@ -268,9 +638,9 @@
       submitBtn.disabled = true;
       submitBtn.textContent = "VERIFYING...";
 
-      // 1. Decoy rejection
+      // 1. Decoy rejection (Sabotage active)
       if (isDecoyActive) {
-        await handleWrong("INCORRECT SOLUTION: Verification checksum failed.");
+        await handleWrong("INCORRECT: Decoy verification checksum failed.");
         submitBtn.disabled = false;
         submitBtn.textContent = "SUBMIT ANSWER →";
         return;
@@ -279,7 +649,7 @@
       // 2. Check correctness (supports fuzzy matching and accepted variants)
       const isCorrect = isAnswerCorrect(answer, targetLocation.puzzle?.answer, targetLocation.acceptedAnswers);
 
-      // 3. Fake Reject trap
+      // 3. Fake Reject trap (Sabotage active)
       const fakeReject = currentTeam.sabotageState?.fakeReject;
       if (isCorrect && fakeReject?.active) {
         await firebaseService.updateTeam(user.teamId, { "sabotageState.fakeReject.active": false });
@@ -288,7 +658,7 @@
           playerId: user.playerId,
           locationId: targetLocation.id
         });
-        await handleWrong("ACCESS DENIED: Signal packet corrupted. Verification rejected.");
+        await handleWrong("ACCESS DENIED: Telemetry corrupted. Verification rejected.");
         submitBtn.disabled = false;
         submitBtn.textContent = "SUBMIT ANSWER →";
         return;
