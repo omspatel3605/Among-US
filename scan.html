@@ -20,13 +20,12 @@
       justify-content: center;
     }
 
-    /* 4x4 Mini-Sudoku Grid */
+    /* ── SUDOKU (4×4) ── */
     .sudoku-grid {
       display: grid;
-      grid-template-columns: repeat(4, 48px);
-      grid-template-rows: repeat(4, 48px);
-      gap: 2px;
-      background: #38fedc;
+      grid-template-columns: repeat(4, 54px);
+      grid-template-rows: repeat(4, 54px);
+      gap: 0;
       border: 3px solid #38fedc;
       border-radius: 8px;
       overflow: hidden;
@@ -37,26 +36,32 @@
       align-items: center;
       justify-content: center;
       font-family: var(--font-display);
-      font-size: 20px;
-      color: #ffffff;
+      font-size: 22px;
+      color: #e0e0e0;
+      border: 1px solid #2d325a;
       user-select: none;
     }
-    .sudoku-cell.target-cell {
-      background: #2a1f4d;
-      color: var(--yellow);
+    .sudoku-cell.given {
+      color: #38fedc;
       font-weight: 800;
-      box-shadow: inset 0 0 10px rgba(245, 245, 87, 0.4);
     }
-    .sudoku-cell.border-r { border-right: 3px solid #38fedc; }
-    .sudoku-cell.border-b { border-bottom: 3px solid #38fedc; }
+    .sudoku-cell.blank {
+      color: #3a3f6a;
+      font-size: 14px;
+    }
+    .sudoku-cell.top-row {
+      background: rgba(245,245,87,0.07);
+    }
+    /* thick box borders */
+    .sudoku-cell.thick-r  { border-right:  3px solid #38fedc; }
+    .sudoku-cell.thick-b  { border-bottom: 3px solid #38fedc; }
 
-    /* 3x3 KenKen Grid */
+    /* ── KENKEN (3×3) ── */
     .kenken-grid {
       display: grid;
-      grid-template-columns: repeat(3, 64px);
-      grid-template-rows: repeat(3, 64px);
-      gap: 3px;
-      background: #2d325a;
+      grid-template-columns: repeat(3, 72px);
+      grid-template-rows: repeat(3, 72px);
+      gap: 0;
       border: 3px solid #38fedc;
       border-radius: 8px;
       overflow: hidden;
@@ -68,16 +73,23 @@
       align-items: center;
       justify-content: center;
       font-family: var(--font-display);
-      font-size: 20px;
-      color: #ffffff;
+      font-size: 22px;
+      color: transparent; /* cells are EMPTY — no digit shown */
+      border: 1px solid #2d325a;
     }
-    .kenken-cell.target-row {
-      background: #1a2342;
-      border: 1px dashed var(--yellow);
+    .kenken-cell.mid-row {
+      background: rgba(245,245,87,0.06);
+      border-color: rgba(245,245,87,0.3);
     }
+    /* cage colour tints */
+    .kenken-cell[data-cage="A"] { background: rgba(56,254,220,0.09); }
+    .kenken-cell[data-cage="B"] { background: rgba(245,245,87,0.12); }
+    .kenken-cell[data-cage="C"] { background: rgba(168,85,247,0.10); }
+    .kenken-cell[data-cage="D"] { background: rgba(239,68,68,0.10);  }
+    .kenken-cell[data-cage="E"] { background: rgba(34,197,94,0.10);  }
     .kenken-cage-badge {
       position: absolute;
-      top: 2px;
+      top: 3px;
       left: 4px;
       font-family: var(--font-mono);
       font-size: 11px;
@@ -86,64 +98,39 @@
       letter-spacing: 0.5px;
     }
 
-    /* 5x5 Polybius Matrix Grid */
-    .matrix-table {
-      border-collapse: collapse;
-      font-family: var(--font-mono);
-      font-size: 14px;
-      text-align: center;
-      margin: 4px auto;
-    }
-    .matrix-table th {
-      padding: 4px 10px;
-      color: var(--yellow);
-      font-weight: 700;
-      border-bottom: 2px solid var(--border);
-    }
-    .matrix-table td {
-      padding: 6px 12px;
-      background: #16182e;
-      border: 1px solid var(--border);
-      color: #ffffff;
-      font-weight: 600;
-    }
-    .matrix-table td.header-col {
-      background: transparent;
-      color: var(--yellow);
-      border: none;
-      font-weight: 700;
-    }
-    .matrix-table td.highlight-cell {
-      background: rgba(56, 254, 220, 0.25);
-      color: var(--cyan);
-      border-color: var(--cyan);
-      font-weight: 800;
-    }
-
-    /* Cipher Banner */
+    /* ── CAESAR CIPHER ── */
     .cipher-terminal {
       width: 100%;
       background: #080914;
       border: 2px solid var(--cyan);
-      border-radius: 8px;
-      padding: 12px;
+      border-radius: 10px;
+      padding: 14px;
       font-family: var(--font-mono);
     }
-    .cipher-signal {
-      font-size: 24px;
-      letter-spacing: 6px;
-      color: var(--yellow);
-      font-weight: 700;
+    .cipher-label {
+      font-size: 10px;
+      color: var(--cyan);
+      letter-spacing: 2px;
       text-align: center;
-      margin: 8px 0;
-      text-shadow: 0 0 10px rgba(245, 245, 87, 0.5);
+      margin-bottom: 6px;
+      opacity: 0.7;
     }
-    .cipher-rot {
-      font-size: 11px;
+    .cipher-signal {
+      font-size: 20px;
+      letter-spacing: 4px;
+      color: var(--yellow);
+      font-weight: 800;
+      text-align: center;
+      margin: 10px 0;
+      text-shadow: 0 0 12px rgba(245,245,87,0.6);
+      word-break: break-all;
+    }
+    .cipher-rule {
+      font-size: 12px;
       color: var(--cyan);
       text-align: center;
-      letter-spacing: 1px;
-      margin-bottom: 8px;
+      margin: 6px 0 8px;
+      letter-spacing: 0.5px;
     }
     .cipher-strip {
       font-size: 10px;
@@ -151,31 +138,92 @@
       overflow-x: auto;
       white-space: nowrap;
       text-align: center;
-      padding: 4px 0;
+      padding: 6px 2px 2px;
       border-top: 1px dashed var(--border);
+      line-height: 1.8;
     }
 
-    /* Crossword Layout */
-    .crossword-clues-box {
-      width: 100%;
+    /* ── CROSSWORD (3×3) ── */
+    .crossword-grid-wrap {
       display: flex;
       flex-direction: column;
+      align-items: center;
       gap: 10px;
-      font-size: 13px;
-      text-align: left;
+      width: 100%;
     }
-    .clue-heading {
+    .crossword-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 60px);
+      grid-template-rows: repeat(3, 60px);
+      gap: 4px;
+    }
+    .cw-cell {
+      background: #16182e;
+      border: 2px solid #38fedc;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       font-family: var(--font-display);
+      font-size: 26px;
+      color: #ffffff;
+      font-weight: 800;
+    }
+    .cw-row-label {
+      font-family: var(--font-mono);
       font-size: 11px;
       color: var(--cyan);
-      letter-spacing: 0.5px;
-      margin-bottom: 4px;
+      text-align: center;
+      letter-spacing: 1px;
     }
-    .clue-item {
-      background: rgba(255, 255, 255, 0.04);
-      padding: 6px 10px;
-      border-radius: 6px;
-      border-left: 3px solid var(--border-active);
+
+    /* ── RIDDLE ── */
+    .riddle-bubble {
+      background: #13163a;
+      border: 2px solid var(--border-active);
+      border-radius: 12px;
+      padding: 16px;
+      font-size: 15px;
+      font-style: italic;
+      color: #e0e0ff;
+      line-height: 1.6;
+      text-align: center;
+      width: 100%;
+      position: relative;
+    }
+    .riddle-bubble::before {
+      content: '❝';
+      font-size: 28px;
+      color: var(--cyan);
+      display: block;
+      margin-bottom: 6px;
+      font-style: normal;
+      opacity: 0.5;
+    }
+
+    /* ── ANAGRAM TILES ── */
+    .anagram-tiles {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      margin: 8px 0;
+    }
+    .anagram-tile {
+      width: 44px;
+      height: 48px;
+      background: linear-gradient(135deg, #1e2248, #2a305a);
+      border: 2px solid #38fedc;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-display);
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--yellow);
+      box-shadow: 0 0 8px rgba(56,254,220,0.25);
+      user-select: none;
     }
   </style>
 
@@ -428,185 +476,169 @@
       }
     }
 
-    // Render Rich Diagram for Puzzle Type
+    // Render Rich Diagram for Puzzle Type (NO answers shown anywhere)
     function renderVisualPuzzle(puzzle) {
       puzzleVisualContainer.innerHTML = "";
       if (!puzzle) return;
 
       const type = puzzle.type;
 
-      // 1. ROT-3 Shift Cipher
-      if (type === "cipher") {
+      // ── 1. CROSSWORD-3×3 ──
+      if (type === "crossword-3x3") {
+        const grid = puzzle.grid || [["L","A","B"],["A","R","M"],["B","U","G"]];
+        const rowColors = ["rgba(56,254,220,0.08)", "rgba(168,85,247,0.08)", "rgba(245,245,87,0.08)"];
+        let cells = "";
+        grid.forEach((row, ri) => {
+          row.forEach(letter => {
+            cells += `<div class="cw-cell" style="background:${rowColors[ri]};">${letter}</div>`;
+          });
+        });
+        puzzleVisualContainer.innerHTML = `
+          <div class="crossword-grid-wrap">
+            <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:4px;">
+              READ EACH ROW → LEFT TO RIGHT
+            </div>
+            <div class="crossword-grid">${cells}</div>
+            <div class="cw-row-label" style="margin-top:6px;">
+              Row 1 + Row 2 + Row 3 — write them together with <strong>no spaces</strong>
+            </div>
+          </div>
+        `;
+      }
+
+      // ── 2. CAESAR CIPHER ──
+      else if (type === "caesar-cipher") {
+        const ct = puzzle.cipherText || "WUHDVXUH LV DW WKH JD]HER";
+        const rule = puzzle.shiftHint || "Shift each letter back by 3  |  D→A  E→B  F→C  G→D  H→E …  Z→W";
         puzzleVisualContainer.innerHTML = `
           <div class="cipher-terminal">
-            <div class="cipher-rot">ENCRYPTION PROTOCOL: ${puzzle.shiftKey || 'ROT-3 (SHIFT = -3)'}</div>
-            <div class="cipher-signal">${puzzle.cipherText || 'G E O R F N'}</div>
+            <div class="cipher-label">⚡ INTERCEPTED ENCRYPTED MESSAGE ⚡</div>
+            <div class="cipher-signal">${ct}</div>
+            <div class="cipher-rule">🔑 ${rule}</div>
             <div class="cipher-strip">
-              ALPHABET: A B C D E F G H I J K L M N O P Q R S T U V W X Y Z<br>
-              DECRYPT : . . . A B C D E F G H I J K L M N O P Q R S T U V W
+              CIPHER:  A B C D E F G H I J K L M N O P Q R S T U V W X Y Z<br>
+              PLAIN :  X Y Z A B C D E F G H I J K L M N O P Q R S T U V W
+            </div>
+            <div style="font-size:10px;color:var(--yellow);text-align:center;margin-top:8px;font-family:var(--font-mono);">
+              ↳ Decode the FIRST word only and enter it as your answer
             </div>
           </div>
         `;
-      } 
-      // 2. 4x4 Mini-Sudoku
-      else if (type === "sudoku") {
-        puzzleVisualContainer.innerHTML = `
-          <div style="text-align:center; font-family:var(--font-mono); font-size:11px; color:var(--muted); margin-bottom:8px;">
-            4x4 REACTOR SUDOKU (Digits 1–4 per row, col, and 2x2 box)
-          </div>
-          <div class="sudoku-grid">
-            <!-- Row 1 -->
-            <div class="sudoku-cell">1</div>
-            <div class="sudoku-cell border-r">2</div>
-            <div class="sudoku-cell">3</div>
-            <div class="sudoku-cell target-cell">[A]</div>
-
-            <!-- Row 2 -->
-            <div class="sudoku-cell border-b">3</div>
-            <div class="sudoku-cell border-r border-b target-cell">[B]</div>
-            <div class="sudoku-cell border-b">1</div>
-            <div class="sudoku-cell border-b">2</div>
-
-            <!-- Row 3 -->
-            <div class="sudoku-cell target-cell">[C]</div>
-            <div class="sudoku-cell border-r">1</div>
-            <div class="sudoku-cell">4</div>
-            <div class="sudoku-cell">3</div>
-
-            <!-- Row 4 -->
-            <div class="sudoku-cell">4</div>
-            <div class="sudoku-cell border-r">3</div>
-            <div class="sudoku-cell target-cell">[D]</div>
-            <div class="sudoku-cell">1</div>
-          </div>
-          <div style="margin-top:8px; font-family:var(--font-mono); font-size:12px; color:var(--yellow); font-weight:700;">
-            Code to enter: [A][B][C][D]
-          </div>
-        `;
       }
-      // 3. 3x3 KenKen Grid
+
+      // ── 3. KENKEN (3×3, EMPTY cells, cages shown) ──
       else if (type === "kenken") {
+        // cage map per cell: [row][col] → cage letter
+        const cageMap = puzzle.cageMap || [["A","A","B"],["C","D","D"],["C","E","E"]];
+        const cageLabels = puzzle.cageLabels || { A:"3+", B:"3", C:"6×", D:"4+", E:"3+" };
+        // track which cell first holds the badge
+        const badgePlaced = {};
+        let cells = "";
+        for (let r = 0; r < 3; r++) {
+          for (let c = 0; c < 3; c++) {
+            const cage = cageMap[r][c];
+            const isMid = (r === 1);
+            const midCls = isMid ? " mid-row" : "";
+            // thick right border between cage groups (simplified: col 1→2 break)
+            const borderR = (c < 2) ? " style=\"border-right:2px solid #2d325a;\"" : "";
+            const borderB = (r < 2) ? " style=\"border-bottom:2px solid #2d325a;\"" : "";
+            const badge = (!badgePlaced[cage] && cageLabels[cage])
+              ? `<span class="kenken-cage-badge">${cageLabels[cage]}</span>` : "";
+            if (!badgePlaced[cage]) badgePlaced[cage] = true;
+            cells += `<div class="kenken-cell${midCls}" data-cage="${cage}">${badge}</div>`;
+          }
+        }
         puzzleVisualContainer.innerHTML = `
-          <div style="text-align:center; font-family:var(--font-mono); font-size:11px; color:var(--muted); margin-bottom:8px;">
-            3x3 KENKEN (Digits 1, 2, 3 per row/col)
+          <div style="text-align:center; font-family:var(--font-mono); font-size:10px; color:var(--muted); margin-bottom:8px; letter-spacing:1px;">
+            3×3 KENKEN — digits 1, 2, 3 — no repeats per row or column
           </div>
-          <div class="kenken-grid">
-            <!-- Row 1 -->
-            <div class="kenken-cell">
-              <span class="kenken-cage-badge">3+</span>
-              1
-            </div>
-            <div class="kenken-cell">
-              2
-            </div>
-            <div class="kenken-cell">
-              <span class="kenken-cage-badge">6×</span>
-              3
-            </div>
+          <div class="kenken-grid">${cells}</div>
+          <div style="margin-top:10px; font-family:var(--font-mono); font-size:11px; color:var(--muted); line-height:1.6; text-align:center;">
+            🟦 Cage colours group cells • Corner badge = target value &amp; operation<br>
+            <span style="color:var(--yellow); font-weight:700; font-size:12px;">
+              Enter MIDDLE ROW (Row 2) as a 3-digit code, left to right
+            </span>
+          </div>
+        `;
+      }
 
-            <!-- Row 2 -->
-            <div class="kenken-cell">
-              <span class="kenken-cage-badge">1−</span>
-              3
-            </div>
-            <div class="kenken-cell">
-              <span class="kenken-cage-badge">4+</span>
-              1
-            </div>
-            <div class="kenken-cell">
-              2
-            </div>
+      // ── 4. RIDDLE ──
+      else if (type === "riddle") {
+        const text = (puzzle.question || "").split("\n\n").pop() // grab the riddle quote block
+          .replace(/^"|"$|^'|'$/g, ""); // strip quotes if any
+        puzzleVisualContainer.innerHTML = `
+          <div class="riddle-bubble">
+            ${puzzle.question
+              ? puzzle.question.replace(/\n/g, "<br>").replace(/"([^"]+)"/g, '<em>"$1"</em>')
+              : "I have a map but no land…"}
+          </div>
+          <div style="margin-top:8px; font-family:var(--font-mono); font-size:11px; color:var(--muted); text-align:center; letter-spacing:0.5px;">
+            Answer with a <strong>single word</strong>
+          </div>
+        `;
+      }
 
-            <!-- Row 3 (Target Row) -->
-            <div class="kenken-cell target-row">
-              <span class="kenken-cage-badge">?</span>
-              2
-            </div>
-            <div class="kenken-cell target-row">
-              <span class="kenken-cage-badge">?</span>
-              3
-            </div>
-            <div class="kenken-cell target-row">
-              <span class="kenken-cage-badge">1</span>
-              1
-            </div>
+      // ── 5. SUDOKU (4×4, given cells from config) ──
+      else if (type === "sudoku") {
+        const given = puzzle.givenGrid || [
+          [1,null,null,4],
+          [null,4,1,null],
+          [null,1,4,null],
+          [4,null,null,1]
+        ];
+        // Box borders: thick after col 1 and row 1
+        let cells = "";
+        given.forEach((row, ri) => {
+          row.forEach((val, ci) => {
+            const isGiven = val !== null;
+            const isTop = ri === 0;
+            let cls = "sudoku-cell";
+            if (isTop) cls += " top-row";
+            if (isGiven) cls += " given"; else cls += " blank";
+            // thick box dividers
+            if (ci === 1) cls += " thick-r";
+            if (ri === 1) cls += " thick-b";
+            const display = isGiven ? val : "·";
+            cells += `<div class="${cls}">${display}</div>`;
+          });
+        });
+        puzzleVisualContainer.innerHTML = `
+          <div style="text-align:center;font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-bottom:8px;letter-spacing:1px;">
+            4×4 REACTOR SUDOKU — digits 1–4, no repeats per row, col &amp; 2×2 box
           </div>
-          <div style="margin-top:8px; font-family:var(--font-mono); font-size:12px; color:var(--yellow); font-weight:700;">
-            Target: Sequence of Row 3 from left to right [2 3 1]
+          <div class="sudoku-grid">${cells}</div>
+          <div style="margin-top:10px; font-family:var(--font-mono); font-size:11px; line-height:1.6; text-align:center;">
+            <span style="color:var(--cyan);">■</span> Cyan = given digit &nbsp;|&nbsp; <span style="color:#3a3f6a;">·</span> = blank to fill<br>
+            <span style="color:var(--yellow); font-weight:700; font-size:12px;">
+              Enter TOP ROW as a 4-digit code, left to right
+            </span>
           </div>
         `;
       }
-      // 4. Mini Crossword
-      else if (type === "crossword") {
+
+      // ── 6. ANAGRAM ──
+      else if (type === "anagram") {
+        const letters = puzzle.scrambledLetters || ["R","T","S","P","O","M","I","O"];
+        const tiles = letters.map(l =>
+          `<div class="anagram-tile">${l}</div>`
+        ).join("");
         puzzleVisualContainer.innerHTML = `
-          <div class="crossword-clues-box">
-            <div>
-              <div class="clue-heading">ACROSS:</div>
-              <div class="clue-item"><strong>1 Across:</strong> Main academic block facing lawn (6 letters): <strong>A B L O C K</strong></div>
-              <div class="clue-item" style="margin-top:4px;"><strong>3 Across:</strong> Non-impostor astronaut role (4 letters): <strong>C R E W</strong></div>
-            </div>
-            <div>
-              <div class="clue-heading">DOWN:</div>
-              <div class="clue-item"><strong>1 Down:</strong> Curved amphitheater rest benches (7 letters): <strong>S E A T I N G</strong></div>
-              <div class="clue-item" style="margin-top:4px;"><strong>2 Down:</strong> Impostor detection siren (5 letters): <strong>A L A R M</strong></div>
-            </div>
-            <div style="font-family:var(--font-mono); font-size:11px; color:var(--yellow); text-align:center;">
-              Key destination combines 1 Across + 1 Down: [ A SEATING ]
-            </div>
+          <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:8px;text-align:center;">
+            🔀 SCRAMBLED LETTERS — UNSCRAMBLE TO FIND THE WORD
+          </div>
+          <div class="anagram-tiles">${tiles}</div>
+          <div style="margin-top:10px;font-family:var(--font-mono);font-size:11px;color:var(--muted);text-align:center;">
+            ${letters.length} letters • Rearrange them all into a single word
           </div>
         `;
       }
-      // 5. 5x5 Polybius Matrix
-      else if (type === "matrix") {
+
+      // ── DECOY / UNKNOWN fallback ──
+      else {
         puzzleVisualContainer.innerHTML = `
-          <div style="text-align:center; font-family:var(--font-mono); font-size:11px; color:var(--muted); margin-bottom:6px;">
-            5x5 TELEMETRY MATRIX (Look up Row, Column)
-          </div>
-          <table class="matrix-table">
-            <tr>
-              <th></th>
-              <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th>
-            </tr>
-            <tr>
-              <td class="header-col">1</td>
-              <td class="highlight-cell">M</td><td class="highlight-cell">E</td><td class="highlight-cell">S</td><td>F</td><td>L</td>
-            </tr>
-            <tr>
-              <td class="header-col">2</td>
-              <td>O</td><td>R</td><td>A</td><td>B</td><td>C</td>
-            </tr>
-            <tr>
-              <td class="header-col">3</td>
-              <td>D</td><td>G</td><td>H</td><td>I</td><td>K</td>
-            </tr>
-            <tr>
-              <td class="header-col">4</td>
-              <td>N</td><td>P</td><td>Q</td><td>T</td><td>U</td>
-            </tr>
-            <tr>
-              <td class="header-col">5</td>
-              <td>V</td><td>W</td><td>X</td><td>Y</td><td>Z</td>
-            </tr>
-          </table>
-          <div style="font-family:var(--font-mono); font-size:13px; color:var(--yellow); font-weight:700; margin-top:6px; letter-spacing:1px;">
-            Coords: (1,1) (1,2) (1,3) (1,3)
-          </div>
-        `;
-      }
-      // 6. Final Extraction Console
-      else if (type === "master-override") {
-        puzzleVisualContainer.innerHTML = `
-          <div style="width:100%; text-align:center; font-family:var(--font-mono);">
-            <div style="font-size:36px; margin-bottom:4px;">🚀</div>
-            <div style="font-size:16px; color:var(--green-light); font-weight:800; letter-spacing:1px;">
-              EXTRACTION BEACON SYNCHRONIZED
-            </div>
-            <div style="font-size:12px; color:var(--muted); margin-top:6px;">
-              Stations cleared: 6/6 • Location: Mess 1st Floor
-            </div>
-            <div style="margin-top:10px; background:rgba(80,239,57,0.1); border:1px solid var(--green-light); border-radius:6px; padding:8px; font-size:12px; color:var(--yellow);">
-              Override Passcode: Type <strong>VICTORY</strong> or <strong>FINISH</strong>
-            </div>
+          <div style="font-family:var(--font-mono);font-size:13px;color:var(--muted);text-align:center;padding:16px;">
+            [ TELEMETRY VISUAL UNAVAILABLE ]<br>
+            <span style="font-size:11px;">Read the task description above carefully.</span>
           </div>
         `;
       }

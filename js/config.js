@@ -82,16 +82,19 @@ export const SABOTAGE_CONFIG = {
 };
 
 /**
- * 6 Fixed Sequential PDEU Campus Locations on the Official Map
- * Locations:
- * 1. OSAIL Gazebo
- * 2. D Block Gazebo
- * 3. Germi (Gemini Stage)
- * 4. C Block Gazebo
- * 5. A Block Seating
- * 6. Mess 1st Floor
+ * 6 Fixed Sequential PDEU Campus Locations
+ * Route: OSAIL Gazebo → D Block Gazebo → Germi → C Block Gazebo → A Block Seating → Mess 1st Floor
+ *
+ * Puzzle types (one per station, NEVER reveal answer in visual):
+ *  1. crossword-3x3  — read row words, concat them
+ *  2. caesar-cipher  — shift-3 decode, answer = first word
+ *  3. kenken         — 3×3 cage grid, answer = middle row digits
+ *  4. riddle         — lateral thinking riddle, answer = SCREEN
+ *  5. sudoku         — 4×4 partial grid, answer = solved top row
+ *  6. anagram        — unscramble 8 letters, answer = IMPOSTOR
  */
 export const LOCATIONS = [
+  // ── STATION 1 ──────────────────────────────────────────────────
   {
     id: "osail-gazebo",
     order: 1,
@@ -101,23 +104,27 @@ export const LOCATIONS = [
     token: "OG842X1",
     clue: "Start at the central OSAIL Gazebo pavilion beside the Cricket Ground.",
     puzzle: {
-      type: "cipher",
-      category: "ROT-3 Shift Cipher",
-      question: "DECODE INTERCEPTED BEACON: Emergency transmission received on frequency 104.3. Decrypt ciphertext 'G E O R F N' using ROT-3 (Shift each letter 3 positions backward in the alphabet: D->A, E->B...):",
-      cipherText: "G E O R F N",
-      shiftKey: "-3 (ROT-3)",
-      answer: "D Block",
-      hint: "G shifted back 3 is D. E shifted back 3 is B. O shifted back 3 is L. Spells the next building block!"
+      type: "crossword-3x3",
+      category: "Mini Crossword (3×3)",
+      question: "STATION INTEL RECOVERED: A 3×3 letter grid was found pinned to the OSAIL notice board. Three things you'd find near a research station — one place, one part, one problem. Read each row left-to-right and write all three row-words together with no spaces:",
+      // Grid: LAB / ARM / BUG — shown as-is, NO answer shown elsewhere
+      grid: [
+        ["L","A","B"],
+        ["A","R","M"],
+        ["B","U","G"]
+      ],
+      answer: "LABARMBUG",
+      hint: "Row 1 is a place where science happens. Row 2 is a body part. Row 3 is an annoying tiny creature. Smash all three together!"
     },
-    acceptedAnswers: [
-      "dblock", "d block", "d-block", "dgazebo", "d gazebo", "d block gazebo", "dblockgazebo", "d"
-    ],
+    acceptedAnswers: ["labarmbug", "lab arm bug", "lab-arm-bug", "labrarmbug"],
     decoyPuzzle: {
-      question: "Input the 6-character relay serial from the central electrical conduit beneath the canopy: [HEX: 0xFD42]",
+      question: "Input the 6-character relay serial from the electrical conduit under the OSAIL canopy lamp: [HEX code]",
       type: "text",
-      hint: "Check the overhead ceiling junction."
+      hint: "Check the overhead ceiling junction box."
     }
   },
+
+  // ── STATION 2 ──────────────────────────────────────────────────
   {
     id: "dblock-gazebo",
     order: 2,
@@ -127,27 +134,28 @@ export const LOCATIONS = [
     token: "DG519K2",
     clue: "Navigate east between D Block and C Block to locate D Block Gazebo.",
     puzzle: {
-      type: "sudoku",
-      category: "4x4 Reactor Sudoku",
-      question: "REACTOR CORE BALANCE: Complete the 4x4 energy Sudoku grid. Digits 1 to 4 cannot repeat in any row, column, or 2x2 quadrant. Find the missing values in cells [A], [B], [C], and [D]. Enter the 4-digit security code [ABCD]:",
-      grid: [
-        [1, 2, 3, "A"],
-        [3, "B", 1, 2],
-        ["C", 1, 4, 3],
-        [4, 3, "D", 1]
-      ],
-      answer: "4422",
-      hint: "Row 1 is missing 4 (A=4). Row 2 is missing 4 (B=4). Row 3 is missing 2 (C=2). Row 4 is missing 2 (D=2). Code = 4422!"
+      type: "caesar-cipher",
+      category: "Caesar Cipher (Shift −3)",
+      // Ciphertext: "WUHDVXUH LV DW WKH JD]HER" decrypts to "TREASURE IS AT THE GAZEBO"
+      // Answer is the FIRST decoded word only — TREASURE
+      question: "ENCRYPTED CREW DISTRESS MESSAGE intercepted at D Block Gazebo. Julius Caesar always shifted his letters by 3. Shift each letter BACK 3 places (D→A, E→B, F→C…). Decode the first word of the message and enter it as your answer:",
+      cipherText: "WUHDVXUH LV DW WKH JD]HER",
+      shiftHint: "Shift each letter back by 3  |  D→A  E→B  F→C  G→D  H→E …  Z→W",
+      answer: "TREASURE",
+      hint: "W goes back 3 → T. U→R. H→E. D→A. V→S. X→U. U→R. H→E. What 8-letter word does that spell?"
     },
     acceptedAnswers: [
-      "4422", "4 4 2 2", "4,4,2,2", "4-4-2-2", "germi", "germistage", "germi stage"
+      "treasure", "TREASURE", "Treasure",
+      "treasure is at the gazebo", "treasureisatthegazebo"
     ],
     decoyPuzzle: {
-      question: "Count the exact number of red concrete paver blocks forming the gazebo foundation ramp.",
+      question: "Count the exact number of red paver blocks forming the D Block Gazebo foundation ramp.",
       type: "number",
-      hint: "Recount carefully from left to right."
+      hint: "Count carefully from left to right."
     }
   },
+
+  // ── STATION 3 ──────────────────────────────────────────────────
   {
     id: "germi",
     order: 3,
@@ -155,31 +163,43 @@ export const LOCATIONS = [
     shortName: "Germi",
     coords: { x: 59.4, y: 76.8 },
     token: "GM388Z3",
-    clue: "Proceed south into the courtyard amphitheater stage of D Block (Germi).",
+    clue: "Proceed south into the courtyard amphitheater known as Germi.",
     puzzle: {
       type: "kenken",
-      category: "3x3 Oxygen KenKen",
-      question: "OXYGEN RECYCLER HARMONIC: Solve the 3x3 KenKen grid using digits 1, 2, and 3 (no repeats in any row or column). Cages: Top-Left (3+), Top-Right (6x), Mid-Left (1-), Center (4+), Bottom-Right (1). What is the sequence of digits in the BOTTOM ROW (Row 3, left to right)?",
-      gridSize: 3,
-      cages: [
-        { label: "3+", cells: [[0,0], [0,1]] },
-        { label: "6x", cells: [[0,2], [1,2]] },
-        { label: "1-", cells: [[1,0], [2,0]] },
-        { label: "4+", cells: [[1,1], [2,1]] },
-        { label: "1",  cells: [[2,2]] }
+      category: "Mini KenKen (3×3)",
+      // Solved grid:
+      //   Row 0:  1  2  3
+      //   Row 1:  2  3  1   ← ANSWER ROW (middle)
+      //   Row 2:  3  1  2
+      // Cages (no filled values shown in visual):
+      //   A: (0,0)+(0,1) sum=3  → "3+"
+      //   B: (0,2) single=3    → "3"
+      //   C: (1,0)+(2,0) product=6 → "6×"
+      //   D: (1,1)+(1,2) sum=4 → "4+"
+      //   E: (2,1)+(2,2) sum=3 → "3+"
+      question: "OXYGEN RECYCLER LOCK: Fill this 3×3 KenKen using only the digits 1, 2, 3 — no digit may repeat in any row or column. Each outlined cage shows a target value and operation in its top-left corner. Solve the full grid, then enter the MIDDLE ROW (Row 2) as a 3-digit code, left to right:",
+      // Cage map by cell [row][col]:
+      //  (0,0) → cage A "3+"   (0,1) → cage A      (0,2) → cage B "3"
+      //  (1,0) → cage C "6×"  (1,1) → cage D "4+"  (1,2) → cage D
+      //  (2,0) → cage C        (2,1) → cage E "3+"  (2,2) → cage E
+      cageMap: [
+        ["A","A","B"],
+        ["C","D","D"],
+        ["C","E","E"]
       ],
+      cageLabels: { A:"3+", B:"3", C:"6×", D:"4+", E:"3+" },
       answer: "231",
-      hint: "Top-right cage '6x' is 3 × 2. Bottom-right cage '1' is 1. The bottom row from left to right is 2, 3, 1."
+      hint: "Cage B (top-right single cell) = 3. Cage A (3+) shares with that row, so the pair is 1+2. Cage C (6×) is 2×3. Work from there!"
     },
-    acceptedAnswers: [
-      "231", "2 3 1", "2,3,1", "2-3-1", "c block", "cblock", "c gazebo", "cgazebo", "c-block", "c block gazebo"
-    ],
+    acceptedAnswers: ["231", "2 3 1", "2,3,1", "2-3-1"],
     decoyPuzzle: {
-      question: "Enter the sound resonance tuning frequency (in kHz) marked on backstage amplifier panel #3.",
+      question: "Enter the sound resonance frequency (kHz) from amplifier panel #3 behind the Germi stage.",
       type: "text",
-      hint: "Check behind the stage wing."
+      hint: "Check behind the backstage wing."
     }
   },
+
+  // ── STATION 4 ──────────────────────────────────────────────────
   {
     id: "cblock-gazebo",
     order: 4,
@@ -189,31 +209,23 @@ export const LOCATIONS = [
     token: "CG773M4",
     clue: "Walk into the sheltered courtyard plaza of C Block to reach C Block Gazebo.",
     puzzle: {
-      type: "crossword",
-      category: "Mainframe Crossword",
-      question: "CAMPUS SECURITY MAINFRAME: Solve the crossword clues. Clue 1 Across [A BLOCK] intersects with Clue 1 Down [SEATING] outside the main academic wing. Enter the combined next destination name:",
-      crosswordClues: {
-        across: [
-          "1 Across: Main academic building wing facing the lawn (6 letters): A B L O C K",
-          "3 Across: Non-impostor astronaut team member (4 letters): C R E W"
-        ],
-        down: [
-          "1 Down: Open outdoor curved amphitheater steps where students rest (7 letters): S E A T I N G",
-          "2 Down: Loud siren triggered during emergency meeting (5 letters): A L A R M"
-        ]
-      },
-      answer: "A Seating",
-      hint: "Combining 1 Across (A BLOCK) and 1 Down (SEATING) directs you to 'A SEATING'!"
+      type: "riddle",
+      category: "Lateral Riddle",
+      question: "INTERCEPTED CREW RIDDLE: Read carefully and answer with a single word.\n\n\"I have a map but no land, a crew but no ship, tasks but no hands. Wherever I'm opened, someone's always watching — but I never speak, I only show. What am I?\"",
+      answer: "SCREEN",
+      hint: "You're literally holding the answer right now — it's the surface between your face and the game."
     },
     acceptedAnswers: [
-      "aseating", "a seating", "ablockseating", "a block seating", "a-seating", "ablock", "a block", "seating", "a seating area"
+      "screen", "phone screen", "phone", "display", "phonescreen"
     ],
     decoyPuzzle: {
-      question: "Count the number of steel hexagonal bolts securing the perimeter gazebo canopy braces.",
+      question: "Count the number of steel hexagonal bolts securing the C Block Gazebo canopy braces.",
       type: "number",
       hint: "Look under the roof eaves."
     }
   },
+
+  // ── STATION 5 ──────────────────────────────────────────────────
   {
     id: "ablock-seating",
     order: 5,
@@ -223,29 +235,37 @@ export const LOCATIONS = [
     token: "AS312P5",
     clue: "Head northeast to the curved open-air amphitheater benches outside A Block.",
     puzzle: {
-      type: "matrix",
-      category: "5x5 Grid Coordinate Cipher",
-      question: "SUB-LEVEL TELEMETRY CIPHER: Using (Row, Column) lookups in the 5x5 Grid Matrix, decipher the coordinate pairs: (1,1), (1,2), (1,3), (1,3). Which central student dining facility is the final beacon located on Floor 1?",
-      matrix: [
-        ["M", "E", "S", "F", "L"],
-        ["O", "R", "A", "B", "C"],
-        ["D", "G", "H", "I", "K"],
-        ["N", "P", "Q", "T", "U"],
-        ["V", "W", "X", "Y", "Z"]
+      type: "sudoku",
+      category: "Mini Sudoku (4×4)",
+      // Partial grid given (null = blank):
+      //   Row 0: [1, ?, ?, 4]
+      //   Row 1: [?, 4, 1, ?]
+      //   Row 2: [?, 1, 4, ?]
+      //   Row 3: [4, ?, ?, 1]
+      // Unique solution:
+      //   Row 0: 1 3 2 4   ← ANSWER ROW (top)
+      //   Row 1: 2 4 1 3
+      //   Row 2: 3 1 4 2
+      //   Row 3: 4 2 3 1
+      question: "REACTOR CORE SEQUENCE: Complete this 4×4 Sudoku. Every row, column, and 2×2 box must contain the digits 1, 2, 3, 4 — no repeats. Solve the full grid, then enter the TOP ROW as a 4-digit code, left to right:",
+      givenGrid: [
+        [1,    null, null, 4   ],
+        [null, 4,    1,    null],
+        [null, 1,    4,    null],
+        [4,    null, null, 1   ]
       ],
-      coordsToDecode: "(1,1) (1,2) (1,3) (1,3)",
-      answer: "Mess",
-      hint: "(Row 1, Col 1) = M. (Row 1, Col 2) = E. (Row 1, Col 3) = S. (Row 1, Col 3) = S. It spells MESS (Mess 1st Floor)!"
+      answer: "1324",
+      hint: "Look at the top-left 2×2 box: it has 1 and 4, so the other two cells need 2 and 3. Column constraints will tell you which order."
     },
-    acceptedAnswers: [
-      "mess", "mess 1 floor", "mess 1st floor", "mess1floor", "mess1", "mess 1", "mess floor 1", "cafeteria", "mess and cafeteria"
-    ],
+    acceptedAnswers: ["1324", "1 3 2 4", "1,3,2,4", "1-3-2-4"],
     decoyPuzzle: {
-      question: "Transcribe the 5-digit room inventory code on the ground-floor faculty door facing the benches.",
+      question: "Transcribe the 5-digit room code on the ground-floor faculty door facing the A Block benches.",
       type: "text",
       hint: "Check through the glass door window."
     }
   },
+
+  // ── STATION 6 (FINAL) ──────────────────────────────────────────
   {
     id: "mess-1-floor",
     order: 6,
@@ -255,19 +275,20 @@ export const LOCATIONS = [
     token: "MF904R6",
     clue: "Final Station! Reach the Mess & Cafeteria (1st Floor dining hall).",
     puzzle: {
-      type: "master-override",
-      category: "Final Extraction Protocol",
-      question: "FINAL SHIP EXTRACTION PROTOCOL: You have scouted all 6 campus sectors! To purge the rogue infection, trigger ship extraction, and log your crew's official survival time on the organizer leaderboard, enter the mission victory passcode:",
-      answer: "VICTORY",
-      hint: "Type VICTORY, FINISH, or SURVIVE to log your mission completion!"
+      type: "anagram",
+      category: "Final Anagram",
+      // Scrambled letters of IMPOSTOR: R T S P O M I O
+      // shown as tiles — NEVER display the answer word anywhere
+      question: "FINAL EXTRACTION PROTOCOL: Someone on your team has been lying all day. Rearrange these 8 scrambled letters to reveal what they are called. Enter the unscrambled word to log your team's mission completion:",
+      scrambledLetters: ["R","T","S","P","O","M","I","O"],
+      answer: "IMPOSTOR",
+      hint: "8 letters. They've been sabotaging your crew this whole hunt. It's a word you've seen in this game before…"
     },
-    acceptedAnswers: [
-      "victory", "finish", "survive", "extract", "amongus", "done", "complete", "win", "survived", "mess"
-    ],
+    acceptedAnswers: ["impostor", "imposter", "IMPOSTOR", "IMPOSTER"],
     decoyPuzzle: {
-      question: "Enter the 8-digit fire extinguisher inspection seal code mounted beside the dining hall stairs.",
+      question: "Enter the 8-digit fire extinguisher inspection seal code mounted beside the Mess hall stairs.",
       type: "text",
-      hint: "Inspect the wall mount plate."
+      hint: "Inspect the wall mount plate near the staircase."
     }
   }
 ];
