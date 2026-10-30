@@ -199,6 +199,7 @@
     let selectedSize = 4;
     let currentTeamId = null;
     let unsubscribe = null;
+    let lobbyPollTimer = null;
 
     // Check for existing session → show Continue button
     const existing = session.get();
@@ -395,25 +396,48 @@
         document.getElementById('guest-waiting').classList.remove('hidden');
       }
 
-      // Subscribe to live team updates
-      if (unsubscribe) unsubscribe();
-      unsubscribe = firebaseService.subscribeTeam(teamId, (team) => {
+      function handleLobbyTeamUpdate(team) {
         if (!team) return;
         renderLobbyPlayers(team, isHost);
 
         // If the game was started by host, redirect all players instantly
         if (team.status === "playing") {
-          const myPlayer = (team.players || []).find(p => p.playerId === session.get()?.playerId);
+          const sess = session.get() || {};
+          const myPlayer = (team.players || []).find(p => 
+            p.playerId === sess.playerId || 
+            (sess.playerName && p.name && p.name.trim().toLowerCase() === sess.playerName.trim().toLowerCase())
+          );
+
           if (myPlayer && myPlayer.role) {
-            const sess = session.get();
             sess.role = myPlayer.role;
+            sess.playerId = myPlayer.playerId;
             sess.color = myPlayer.color || sess.color;
             sess.teamSize = team.maxSize || team.size;
             session.set(sess);
+
+            if (lobbyPollTimer) clearInterval(lobbyPollTimer);
+            if (unsubscribe) unsubscribe();
+
             window.location.href = "role.html";
           }
         }
-      });
+      }
+
+      // 1. Subscribe to live WebSocket updates
+      if (unsubscribe) unsubscribe();
+      unsubscribe = firebaseService.subscribeTeam(teamId, handleLobbyTeamUpdate);
+
+      // 2. High-speed 1.2s polling backup (bypasses any mobile/campus Wi-Fi socket delay)
+      if (lobbyPollTimer) clearInterval(lobbyPollTimer);
+      lobbyPollTimer = setInterval(async () => {
+        try {
+          const team = await firebaseService.getTeam(teamId);
+          if (team) handleLobbyTeamUpdate(team);
+        } catch (e) {}
+      }, 1200);
+
+      // 3. Immediate instant fetch on lobby enter
+      firebaseService.getTeam(teamId).then(handleLobbyTeamUpdate).catch(() => {});
     }
 
     // Render lobby player list
@@ -496,6 +520,7 @@
 
     // LEAVE LOBBY
     window.leaveLobby = function() {
+      if (lobbyPollTimer) clearInterval(lobbyPollTimer);
       if (unsubscribe) unsubscribe();
       // Don't clear session - they can rejoin
       showScreen('screen-landing');

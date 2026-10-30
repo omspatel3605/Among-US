@@ -276,7 +276,7 @@
       </div>
 
       <h2 id="puzzle-station-name" class="font-display" style="font-size:22px; margin-bottom:4px;">
-        OSAIL Gazebo
+        SECTOR TERMINAL
       </h2>
       <p id="puzzle-station-clue" style="color:var(--muted); font-size:12px; margin-bottom:14px;">
         Solve the sector puzzle to decipher your next destination.
@@ -425,12 +425,25 @@
       rogueAIEngine.init(currentTeam, user);
 
       // Subscribe for live puzzle swap / glitch
-      firebaseService.subscribeTeam(user.teamId, (updated) => {
+      function handleTeamScanUpdate(updated) {
         if (!updated) return;
         currentTeam = updated;
         sabotageEngine.handleTeamUpdate(updated);
         rogueAIEngine.handleTeamUpdate(updated);
         renderPuzzleState();
+      }
+
+      firebaseService.subscribeTeam(user.teamId, handleTeamScanUpdate);
+
+      const scanPoll = setInterval(async () => {
+        try {
+          const team = await firebaseService.getTeam(user.teamId);
+          if (team) handleTeamScanUpdate(team);
+        } catch (e) {}
+      }, 2500);
+
+      window.addEventListener('beforeunload', () => {
+        clearInterval(scanPoll);
       });
     }
 

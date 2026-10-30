@@ -285,7 +285,7 @@ export class CampusMapEngine {
         </div>
 
         <div class="marker-label-card">
-          <div class="marker-label-name">${status === 'scrambled' ? '⚠️ ' + loc.name : loc.name}</div>
+          <div class="marker-label-name">${status === 'scrambled' ? '⚠️ RADAR ANOMALY' : (this.calibrationMode ? loc.name : `SECTOR ${loc.order}`)}</div>
           <div class="marker-label-status">
             ${status === 'completed' ? 'CLEARED' : status === 'active' ? 'ACTIVE TARGET' : status === 'scrambled' ? 'RADAR LOCKED' : 'LOCKED'}
           </div>
@@ -304,9 +304,9 @@ export class CampusMapEngine {
 
   onMarkerClick(loc, status) {
     if (status === "active" || status === "scrambled") {
-      showToast(`Current Objective: ${loc.name}. Navigate here and tap SCAN QR!`, "info");
+      showToast(`Active Target: Sector ${loc.order}. Follow the radar beacon and tap SCAN QR!`, "info");
     } else if (status === "completed") {
-      showToast(`Station Cleared: ${loc.name}`, "success");
+      showToast(`Sector ${loc.order} Cleared!`, "success");
     }
   }
 }

@@ -119,9 +119,9 @@
       ${user.teamId} · ${user.playerName} ${roleIcon}
     `;
 
-    // Initialize Map Engine (with high-res 2000x1438 campus map)
+    // Initialize Map Engine (init with empty locations list until team data arrives)
     const mapEngine = new CampusMapEngine(document.getElementById('map-container'), {
-      locations: LOCATIONS
+      locations: []
     });
 
     let currentTeamData = null;
@@ -145,8 +145,8 @@
       btn.textContent = isCollapsed ? '▼' : '▲';
     };
 
-    // Real-Time Firestore Team Updates
-    let unsub = firebaseService.subscribeTeam(user.teamId, (team) => {
+    // Unified Team State Handler
+    function applyTeamState(team) {
       if (!team) return;
       currentTeamData = team;
 
@@ -213,7 +213,21 @@
         name.textContent = `TARGET: SECTOR ${idx}`;
         clue.textContent = activeLoc.clue;
       }
-    });
+    }
+
+    // 1. Immediate instant fetch on page load (eliminates WebSocket connection delay)
+    firebaseService.getTeam(user.teamId).then(applyTeamState).catch(console.warn);
+
+    // 2. Real-Time WebSocket Firestore Subscription
+    let unsub = firebaseService.subscribeTeam(user.teamId, applyTeamState);
+
+    // 3. High-speed 2s Polling Backup (ensures instant state even if phone screen turns off/on)
+    let mapPollTimer = setInterval(async () => {
+      try {
+        const team = await firebaseService.getTeam(user.teamId);
+        if (team) applyTeamState(team);
+      } catch (e) {}
+    }, 2000);
 
     // Controls
     window.toggleDaylight = () => { displayMode.toggle(); };
@@ -378,6 +392,7 @@
 
     window.addEventListener('beforeunload', () => {
       if (unsub) unsub();
+      if (mapPollTimer) clearInterval(mapPollTimer);
       closeScanner();
     });
   </script>

@@ -306,9 +306,12 @@
         <p style="font-size:12px; color:var(--muted); margin:6px 0 8px;">
           Review your role guide above. When your host launches the expedition, your radar will activate automatically!
         </p>
-        <div style="font-family:var(--font-mono); font-size:11px; color:var(--cyan);">
+        <div style="font-family:var(--font-mono); font-size:11px; color:var(--cyan); margin-bottom:12px;">
           Synchronizing with crew leader...
         </div>
+        <button id="btn-guest-ready" class="btn-primary" style="background:var(--cyan); color:#000;">
+          🗺️ I'M READY → GO TO CAMPUS RADAR
+        </button>
       </div>
 
       <!-- Preview Mode (Visited from Main Menu without an active team) -->
@@ -442,15 +445,44 @@
         }
       });
 
-      // All players listen for host launch signal:
-      firebaseService.subscribeTeam(user.teamId, (team) => {
+      // Guest ready button
+      const btnGuestReady = document.getElementById('btn-guest-ready');
+      if (btnGuestReady) {
+        btnGuestReady.addEventListener('click', () => {
+          sound.click();
+          window.location.href = "map.html";
+        });
+      }
+
+      function handleTeamState(team) {
         if (!team) return;
+        // Verify host status in case session lost isHost flag
+        const actualHost = isHost || team.hostPlayerId === user.playerId;
+        if (actualHost && hostArea.classList.contains('hidden')) {
+          hostArea.classList.remove('hidden');
+          guestArea.classList.add('hidden');
+        }
         if (team.expeditionLaunched) {
           sound.success();
           vibrate([80, 40, 120]);
+          if (briefingPollTimer) clearInterval(briefingPollTimer);
           window.location.href = "map.html";
         }
-      });
+      }
+
+      // 1. Immediate fetch
+      firebaseService.getTeam(user.teamId).then(handleTeamState).catch(() => {});
+
+      // 2. High-speed 1.2s polling backup
+      const briefingPollTimer = setInterval(async () => {
+        try {
+          const team = await firebaseService.getTeam(user.teamId);
+          handleTeamState(team);
+        } catch (e) {}
+      }, 1200);
+
+      // 3. WebSocket subscription
+      firebaseService.subscribeTeam(user.teamId, handleTeamState);
     } else {
       // Browsing guide from main menu without a team
       soloArea.classList.remove('hidden');
