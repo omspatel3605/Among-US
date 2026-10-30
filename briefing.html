@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#121326">
+  <title>Tactical Briefing & Rules — PDEU Among Us</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .briefing-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 16px;
+      background: var(--bg-panel);
+      padding: 4px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+    }
+    .briefing-tab-btn {
+      flex: 1;
+      padding: 10px 4px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-family: var(--font-display);
+      font-size: 11px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+      line-height: 1.2;
+    }
+    .briefing-tab-btn.active {
+      background: var(--cyan);
+      color: #000;
+      font-weight: 800;
+      box-shadow: 0 0 10px rgba(56,254,220,0.4);
+    }
+    .briefing-tab-btn.tab-impostor.active {
+      background: var(--red);
+      color: #fff;
+      box-shadow: 0 0 10px rgba(239,68,68,0.5);
+    }
+    .briefing-tab-btn.tab-rules.active {
+      background: var(--yellow);
+      color: #000;
+      box-shadow: 0 0 10px rgba(245,245,87,0.4);
+    }
+
+    .briefing-section {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .tactic-card {
+      background: var(--bg-panel-light);
+      border: 2px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      position: relative;
+    }
+    .tactic-card.card-cyan { border-color: var(--cyan); }
+    .tactic-card.card-red { border-color: var(--red); background: rgba(197,17,17,0.06); }
+    .tactic-card.card-yellow { border-color: var(--yellow); }
+
+    .tactic-title {
+      font-family: var(--font-display);
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .tactic-desc {
+      font-size: 13px;
+      color: #cfd8dc;
+      line-height: 1.5;
+    }
+
+    .tactic-step {
+      display: flex;
+      gap: 10px;
+      margin-top: 8px;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .step-num {
+      background: var(--cyan);
+      color: #000;
+      font-family: var(--font-mono);
+      font-weight: 800;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 11px;
+    }
+    .step-num-red {
+      background: var(--red);
+      color: #fff;
+    }
+
+    /* Synchronized Equal-Time Launch Countdown */
+    .launch-sync-card {
+      background: radial-gradient(circle, #1a233a 0%, #0d0f1f 100%);
+      border: 2px dashed var(--yellow);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      text-align: center;
+      margin-top: 14px;
+    }
+    .sync-timer-val {
+      font-family: var(--font-display);
+      font-size: 24px;
+      color: var(--yellow);
+      margin: 4px 0;
+      letter-spacing: 1px;
+    }
+  </style>
+
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+  <!-- App Header -->
+  <header class="app-header">
+    <div class="header-left">
+      <button class="btn-back" onclick="handleBack()">←</button>
+      <h2 class="header-title" id="briefing-header-title">TACTICAL BRIEFING</h2>
+    </div>
+    <div class="header-right">
+      <button id="btn-daylight" class="btn-icon" onclick="toggleDaylight()" title="Contrast">☀️</button>
+      <button id="btn-snd" class="btn-icon" onclick="toggleSnd()" title="Sound">🔊</button>
+    </div>
+  </header>
+
+  <main class="screen-body">
+
+    <!-- Role Header Pill -->
+    <div id="role-alert-banner" class="card text-center" style="padding:12px; margin-bottom:12px;">
+      <div id="role-banner-badge" style="font-family:var(--font-mono); font-size:11px; font-weight:700; letter-spacing:1px; margin-bottom:2px;">
+        MISSION PARAMETERS LOADED
+      </div>
+      <div id="role-banner-title" class="font-display" style="font-size:18px;">
+        TACTICAL PLAYBOOK
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="briefing-tabs">
+      <button class="briefing-tab-btn active" id="tab-crew" onclick="switchTab('crew')">
+        🧑‍🚀 CREWMATE<br>GUIDE
+      </button>
+      <button class="briefing-tab-btn tab-impostor" id="tab-impostor" onclick="switchTab('impostor')">
+        😈 IMPOSTOR<br>PROTOCOL
+      </button>
+      <button class="briefing-tab-btn tab-rules" id="tab-rules" onclick="switchTab('rules')">
+        🗺️ ROUTE &amp;<br>RULES
+      </button>
+    </div>
+
+    <!-- ======= TAB 1: CREWMATE GUIDE ======= -->
+    <div id="content-crew" class="briefing-section">
+      <div class="tactic-card card-cyan">
+        <div class="tactic-title" style="color:var(--cyan);">
+          <span>📡</span> 1. HOW TO NAVIGATE &amp; CLEAR STATIONS
+        </div>
+        <div class="tactic-desc">
+          Your mission is to clear all 6 PDEU stations in sequential order as fast as possible.
+        </div>
+        <div class="tactic-step">
+          <div class="step-num">1</div>
+          <div><strong>Follow the Radar:</strong> Check the glowing waypoint and clue box on your campus map. The next station is only unlocked after the current one is cleared.</div>
+        </div>
+        <div class="tactic-step">
+          <div class="step-num">2</div>
+          <div><strong>Scan Physical QR:</strong> Tap <strong>📷 SCAN QR</strong> at the station. If your camera struggles, tap <strong>⌨ Manual Code Entry</strong> and type the code printed on the poster.</div>
+        </div>
+        <div class="tactic-step">
+          <div class="step-num">3</div>
+          <div><strong>Solve Together:</strong> Every station features a real cryptographic puzzle (Crossword, Cipher, KenKen, Riddle, Sudoku, Anagram). Enter the solution to unlock the next destination!</div>
+        </div>
+      </div>
+
+      <div class="tactic-card card-yellow">
+        <div class="tactic-title" style="color:var(--yellow);">
+          <span>⚠️</span> 2. SABOTAGE SURVIVAL &amp; DEDUCTION
+        </div>
+        <div class="tactic-desc">
+          One person in your crew is secretly sabotaging your screens in real time.
+        </div>
+        <div class="tactic-step">
+          <div class="step-num" style="background:var(--yellow);">!</div>
+          <div><strong>Screen Corrupted (Decoy)?</strong> If a purple corrupted question appears, the Impostor triggered Puzzle Swap. Decoy answers are auto-rejected! Wait out the ~90s timer for the real puzzle to restore.</div>
+        </div>
+        <div class="tactic-step">
+          <div class="step-num" style="background:var(--yellow);">!</div>
+          <div><strong>Fake Reject Trap:</strong> If your correct answer is rejected once with "Telemetry Corrupted", it was a trap! <strong>Type the exact same answer again</strong> and it will pass.</div>
+        </div>
+        <div class="tactic-step">
+          <div class="step-num" style="background:var(--yellow);">!</div>
+          <div><strong>Watch Teammates' Eyes:</strong> Who was tapping their phone right before your radar scrambled? Keep notes for the final accusation!</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======= TAB 2: IMPOSTOR PROTOCOL ======= -->
+    <div id="content-impostor" class="briefing-section hidden">
+      <div class="tactic-card card-red">
+        <div class="tactic-title" style="color:var(--red);">
+          <span>😈</span> 1. YOUR PRIVATE SABOTAGE PANEL
+        </div>
+        <div class="tactic-desc">
+          Only YOU have the floating <strong>Impostor Sabotage Dock</strong> docked at the bottom of your screen. Tap <strong>▼</strong> to open and trigger powers:
+        </div>
+        <div class="tactic-step">
+          <div class="step-num step-num-red">🧩</div>
+          <div><strong>Puzzle Swap (90s):</strong> Swaps teammates' screen with an impossible decoy question. Any submission they attempt is auto-rejected!</div>
+        </div>
+        <div class="tactic-step">
+          <div class="step-num step-num-red">🗺️</div>
+          <div><strong>Map Scramble (120s):</strong> Falsely redirects their radar and HUD to the wrong gazebo on campus, sending them walking in the wrong direction!</div>
+        </div>
+        <div class="tactic-step">
+          <div class="step-num step-num-red">❌</div>
+          <div><strong>Fake Reject (1 Trap):</strong> Arm this trap so the next time your teammates type the 100% correct answer, the game falsely rejects it once.</div>
+        </div>
+      </div>
+
+      <div class="tactic-card card-yellow">
+        <div class="tactic-title" style="color:var(--yellow);">
+          <span>🎭</span> 2. STEALTH TACTICS &amp; HOW TO WIN
+        </div>
+        <div class="tactic-desc">
+          Your sabotage is 100% digital — you do NOT act out in real life!
+        </div>
+        <div class="tactic-step">
+          <div class="step-num" style="background:var(--yellow);">★</div>
+          <div><strong>Blend In:</strong> Help solve puzzles aloud. Walk with the team. Never pull out your phone just to trigger a power in front of their eyes.</div>
+        </div>
+        <div class="tactic-step">
+          <div class="step-num" style="background:var(--yellow);">★</div>
+          <div><strong>Trigger Subtly:</strong> Tap your sabotage button when walking or pretending to check the map.</div>
+        </div>
+        <div class="tactic-step">
+          <div class="step-num" style="background:var(--yellow);">★</div>
+          <div><strong>Win the Vote:</strong> At Mess 1st Floor, bluff and accuse someone else during the Emergency Meeting! If you avoid majority ejection, you earn a massive <strong>+300 Point Impostor Victory Bonus</strong>!</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======= TAB 3: ROUTE & RULES ======= -->
+    <div id="content-rules" class="briefing-section hidden">
+      <div class="tactic-card">
+        <div class="tactic-title" style="color:var(--white);">
+          <span>🏁</span> PDEU 6-STATION EXPEDITION ROUTE
+        </div>
+        <div class="tactic-desc" style="font-size:12px; line-height:1.6;">
+          <strong>Station 1:</strong> OSAIL Gazebo <em>(Central pavilion)</em><br>
+          <strong>Station 2:</strong> D Block Gazebo <em>(East corridor)</em><br>
+          <strong>Station 3:</strong> Germi <em>(Courtyard amphitheater)</em><br>
+          <strong>Station 4:</strong> C Block Gazebo <em>(Sheltered plaza)</em><br>
+          <strong>Station 5:</strong> A Block Seating <em>(Curved benches)</em><br>
+          <strong>Station 6:</strong> Mess 1st Floor <em>(Final extraction &amp; debrief)</em>
+        </div>
+      </div>
+
+      <div class="tactic-card card-yellow">
+        <div class="tactic-title" style="color:var(--yellow);">
+          <span>⚖️</span> SCORING RULES
+        </div>
+        <div class="tactic-desc" style="font-size:12px; line-height:1.6;">
+          • <strong>Baseline:</strong> +1000 points<br>
+          • <strong>Time Penalty:</strong> -1 point per elapsed minute<br>
+          • <strong>Wrong Answers:</strong> -10 points per failed attempt<br>
+          • <strong>Crew Catch Bonus:</strong> +100 points if the crew correctly votes out the Impostor<br>
+          • <strong>Impostor Escape Bonus:</strong> +300 points if the Impostor avoids majority vote
+        </div>
+      </div>
+    </div>
+
+    <!-- Equal-Time Launch Synchronizer -->
+    <div class="launch-sync-card">
+      <div style="font-family:var(--font-mono); font-size:11px; color:var(--muted); letter-spacing:1px;">
+        SYNCHRONIZED BRIEFING TIMER
+      </div>
+      <div id="sync-timer" class="sync-timer-val">00:10</div>
+      <p style="font-size:11px; color:var(--muted); margin-bottom:10px;">
+        Reading time ensures both Crewmates and Impostors understand their capabilities before stepping out!
+      </p>
+
+      <button id="btn-start-radar" class="btn-primary" onclick="proceedToRadar()">
+        ENTER CAMPUS RADAR →
+      </button>
+    </div>
+
+  </main>
+
+  <script type="module">
+    import { session, displayMode, showToast, vibrate } from './js/app.js';
+    import { sound } from './js/sound.js';
+
+    displayMode.apply();
+
+    const user = session.get();
+    const role = user?.role || 'crewmate';
+
+    window.toggleDaylight = () => { displayMode.toggle(); };
+    window.toggleSnd = () => {
+      const m = sound.toggleMute();
+      document.getElementById("btn-snd").textContent = m ? "🔇" : "🔊";
+    };
+    if (sound.getMuted()) document.getElementById("btn-snd").textContent = "🔇";
+
+    // Set initial banner & auto-select relevant tab
+    const bannerBadge = document.getElementById('role-banner-badge');
+    const bannerTitle = document.getElementById('role-banner-title');
+    const roleBanner = document.getElementById('role-alert-banner');
+
+    if (role === 'impostor') {
+      bannerBadge.textContent = "TOP SECRET • CONFIDENTIAL";
+      bannerBadge.style.color = "var(--red)";
+      bannerTitle.textContent = "😈 IMPOSTOR PROTOCOL";
+      bannerTitle.style.color = "var(--red)";
+      roleBanner.style.borderColor = "var(--red)";
+      switchTab('impostor');
+    } else if (role === 'survivor') {
+      bannerBadge.textContent = "ROGUE AI DETECTED";
+      bannerBadge.style.color = "var(--yellow)";
+      bannerTitle.textContent = "⚡ DUO RECOVERY GUIDE";
+      bannerTitle.style.color = "var(--yellow)";
+      roleBanner.style.borderColor = "var(--yellow)";
+      switchTab('crew');
+    } else {
+      bannerBadge.textContent = "PDEU EXPEDITION TASK FORCE";
+      bannerBadge.style.color = "var(--cyan)";
+      bannerTitle.textContent = "🧑‍🚀 CREWMATE PLAYBOOK";
+      bannerTitle.style.color = "var(--cyan)";
+      roleBanner.style.borderColor = "var(--cyan)";
+      switchTab('crew');
+    }
+
+    // Tab Switching
+    window.switchTab = function(tab) {
+      sound.click();
+      document.querySelectorAll('.briefing-tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.briefing-section').forEach(s => s.classList.add('hidden'));
+
+      if (tab === 'crew') {
+        document.getElementById('tab-crew').classList.add('active');
+        document.getElementById('content-crew').classList.remove('hidden');
+      } else if (tab === 'impostor') {
+        document.getElementById('tab-impostor').classList.add('active');
+        document.getElementById('content-impostor').classList.remove('hidden');
+      } else if (tab === 'rules') {
+        document.getElementById('tab-rules').classList.add('active');
+        document.getElementById('content-rules').classList.remove('hidden');
+      }
+    };
+
+    // Equal-Time Countdown Timer (10 seconds)
+    let timeLeft = 10;
+    const timerEl = document.getElementById('sync-timer');
+    const proceedBtn = document.getElementById('btn-start-radar');
+
+    const countdown = setInterval(() => {
+      timeLeft--;
+      if (timeLeft <= 0) {
+        clearInterval(countdown);
+        timerEl.textContent = "READY FOR DEPLOYMENT";
+        timerEl.style.color = "var(--green-light)";
+        proceedBtn.style.background = "var(--green-light)";
+        proceedBtn.style.color = "#000";
+        proceedBtn.textContent = "🚀 PROCEED TO CAMPUS RADAR →";
+        sound.success();
+        vibrate([50, 30, 80]);
+      } else {
+        timerEl.textContent = `00:${String(timeLeft).padStart(2, '0')}`;
+      }
+    }, 1000);
+
+    window.proceedToRadar = function() {
+      sound.click();
+      window.location.href = "map.html";
+    };
+
+    window.handleBack = function() {
+      sound.click();
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        window.location.href = "index.html";
+      }
+    };
+  </script>
+</body>
+</html>
